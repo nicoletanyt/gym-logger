@@ -7,4 +7,5 @@ export interface Exercise {
 export interface Session {
     duration: number;
     effort: number;
+    exercises: Exercise[];
 }

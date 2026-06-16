@@ -6,10 +6,12 @@
     import { Label } from "$lib/components/ui/label/index.js";
     import { Combobox } from "$lib/components/ui/combobox/";
     import type { Exercise, Session } from "$lib/types";
+    import { goto } from "$app/navigation";
 
     const DEFAULT_SESSION: Session = {
         duration: 20,
         effort: 3,
+        exercises: [],
     };
     let sessionData = $state<Session>(DEFAULT_SESSION);
 
@@ -27,6 +29,21 @@
     function addExercise() {
         exercisesData.push(newExerciseData);
         newExerciseData = DEFAULT_EXERCISE;
+    }
+
+    function addSession() {
+        sessionData.exercises = exercisesData;
+        const currentSessions = JSON.parse(
+            localStorage.getItem("EXERCISES_STORED") ?? "[]",
+        );
+        currentSessions.push(sessionData);
+
+        localStorage.setItem(
+            "EXERCISES_STORED",
+            JSON.stringify(currentSessions),
+        );
+        alert("Session Added!");
+        goto("/");
     }
 </script>
 
@@ -164,7 +181,7 @@
 </form>
 
 <section>
-    <Button variant="secondary" class="bg-green-300">
+    <Button variant="secondary" class="bg-green-300" onclick={addSession}>
         <Plus />
         Add Session
     </Button>

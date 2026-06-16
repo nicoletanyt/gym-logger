@@ -1,42 +1,20 @@
-# sv
+# TODO
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+2. Heatmap
+   - splits into 4 segments => 4 greens
+   - based on effort
 
-## Creating a project
+3. Click on calendar date to view session data
+   - dialog
 
-If you're seeing this, you've probably already done this step. Congrats!
+4. Display all Sessions data under "All Sessions"
+   - Cards
+   - Header: Date + day of week (e.g. "Mon, 12 Jun")
+   - Routine name if there was one (e.g. "Leg Day") — or just "Custom" if none
+   - Duration + effort (e.g. "45 min · High effort")
+   - Exercise names as a short summary line (e.g. "Squat, Leg Press, Lunges...")
 
-```sh
-# create a new project
-npx sv create my-app
-```
+ADDITIONAL FEATURES:
 
-To recreate this project with the same configuration:
-
-```sh
-# recreate this project
-npx sv@0.16.1 create --template minimal --types ts --install npm gym-logger
-```
-
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```sh
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
-
-## Building
-
-To create a production version of your app:
-
-```sh
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+- select criteria for the heatmap to be based on
+  - eg duration or effort
