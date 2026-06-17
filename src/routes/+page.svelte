@@ -4,11 +4,27 @@
     import { Calendar } from "$lib/components/ui/calendar/index.js";
     import { Button } from "$lib/components/ui/button/index.js";
     import * as Card from "$lib/components/ui/card/index.js";
+    import { onMount } from "svelte";
+    import type { Session } from "$lib/types";
 
     let dateValue = $state(today(getLocalTimeZone()));
 
     let showSessions = $state(false);
     let showRoutines = $state(false);
+
+    let currentSessions = $state([]);
+    let calendarData = $derived(
+        Object.fromEntries(
+            currentSessions.map((s: Session) => [s.date, s.effort]),
+        ),
+    );
+
+    onMount(() => {
+        currentSessions = JSON.parse(
+            localStorage.getItem("EXERCISES_STORED") ?? "[]",
+        );
+    });
+    $inspect(currentSessions);
 </script>
 
 <header>
@@ -21,6 +37,7 @@
         bind:value={dateValue}
         class="rounded-md border shadow-sm items-center"
         captionLayout="dropdown"
+        data={calendarData}
     />
 </section>
 

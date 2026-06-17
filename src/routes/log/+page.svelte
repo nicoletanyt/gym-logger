@@ -12,6 +12,7 @@
         duration: 20,
         effort: 3,
         exercises: [],
+        date: new Date().toISOString().split("T")[0],
     };
     let sessionData = $state<Session>(DEFAULT_SESSION);
 
@@ -64,6 +65,10 @@
                 class="w-1/2"
                 bind:value={sessionData.duration}
             />
+        </div>
+        <div class="flex justify-between">
+            <Label class="shrink-0">Date</Label>
+            <Input type="date" class="w-1/2" bind:value={sessionData.date} />
         </div>
         <div class="flex justify-between">
             <Label class="shrink-0">Level of effort</Label>

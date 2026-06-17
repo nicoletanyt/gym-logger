@@ -5,6 +5,7 @@
     import type { ButtonVariant } from "../button/button.svelte";
     import { isEqualMonth, type DateValue } from "@internationalized/date";
     import type { Snippet } from "svelte";
+    import type { Session } from "$lib/types";
 
     let {
         ref = $bindable(null),
@@ -21,6 +22,7 @@
         yearFormat = "numeric",
         day,
         disableDaysOutsideMonth = false,
+        data,
         ...restProps
     }: WithoutChildrenOrChild<CalendarPrimitive.RootProps> & {
         buttonVariant?: ButtonVariant;
@@ -34,6 +36,7 @@
         monthFormat?: CalendarPrimitive.MonthSelectProps["monthFormat"];
         yearFormat?: CalendarPrimitive.YearSelectProps["yearFormat"];
         day?: Snippet<[{ day: DateValue; outsideMonth: boolean }]>;
+        data: Record<string, number>;
     } = $props();
 
     const monthFormat = $derived.by(() => {
@@ -110,6 +113,8 @@ get along, so we shut typescript up by casting `value` to `never`.
                                                     ),
                                                 })}
                                             {:else}
+                                                <!-- EFFORT FROM OBJECT  -->
+                                                <!-- {data[date.toString()]} -->
                                                 <Calendar.Day />
                                             {/if}
                                         </Calendar.Cell>
