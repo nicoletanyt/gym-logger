@@ -144,10 +144,6 @@ get along, so we shut typescript up by casting `value` to `never`.
                                                     </Popover.Trigger>
 
                                                     <Popover.Content>
-                                                        <!-- <Dialog.Header> -->
-                                                        <!--     <Dialog.Title>Sessions on {selectedDate}</Dialog.Title> -->
-                                                        <!-- </Dialog.Header> -->
-
                                                         <p
                                                             class="font-extrabold text-lg"
                                                         >

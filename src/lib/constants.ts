@@ -1,4 +1,4 @@
-import type { Session, Exercise } from "./types";
+import type { Session, Exercise, Routine } from "./types";
 
 export const INTENSITY_MAP: Record<number, string> = {
     0: "bg-transparent",
@@ -20,4 +20,10 @@ export const DEFAULT_EXERCISE: Exercise = {
     name: "Example Exercise",
     sets: 0,
     reps: 0,
+};
+
+export const DEFAULT_ROUTINE: Routine = {
+    id: crypto.randomUUID(),
+    name: "New Routine",
+    exercises: [],
 };

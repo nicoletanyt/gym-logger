@@ -10,3 +10,9 @@ export interface Session {
     exercises: Exercise[];
     date: string;
 }
+
+export interface Routine {
+    id: string;
+    name: string;
+    exercises: Exercise[];
+}
