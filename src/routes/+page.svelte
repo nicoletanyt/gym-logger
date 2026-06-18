@@ -5,13 +5,14 @@
     import { Button } from "$lib/components/ui/button/index.js";
     import * as Card from "$lib/components/ui/card/index.js";
     import { onMount } from "svelte";
+    import type { Session } from "$lib/types";
 
     let dateValue = $state(today(getLocalTimeZone()));
 
     let showSessions = $state(false);
     let showRoutines = $state(false);
 
-    let sessionData = $state({});
+    let sessionData = $state<Record<string, Session>>({});
 
     onMount(() => {
         sessionData = JSON.parse(
@@ -46,15 +47,20 @@
             <Card.Title>Total Sessions</Card.Title>
         </Card.Header>
         <Card.Content>
-            <p>5</p>
+            <p>{Object.keys(sessionData).length}</p>
         </Card.Content>
     </Card.Root>
     <Card.Root>
         <Card.Header>
-            <Card.Title>Total Sessions</Card.Title>
+            <Card.Title>Total Time</Card.Title>
         </Card.Header>
         <Card.Content>
-            <p>5</p>
+            <p>
+                {Object.values(sessionData).reduce(
+                    (acc, curr: Session) => acc + curr.duration,
+                    0,
+                )}
+            </p>
         </Card.Content>
     </Card.Root>
 </section>
