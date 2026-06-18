@@ -1,8 +1,5 @@
 # TODO
 
-3. Click on calendar date to view session data
-   - dialog
-
 4. Display all Sessions data under "All Sessions"
    - Cards
    - Header: Date + day of week (e.g. "Mon, 12 Jun")

@@ -1,6 +1,7 @@
 import type { Session, Exercise } from "./types";
 
 export const INTENSITY_MAP: Record<number, string> = {
+    0: "bg-transparent",
     1: "bg-green-200!",
     2: "bg-green-300!",
     3: "bg-green-500!",

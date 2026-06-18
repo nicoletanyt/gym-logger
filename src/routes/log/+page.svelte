@@ -25,9 +25,9 @@
     function addSession() {
         sessionData.exercises = exercisesData;
         const currentSessions = JSON.parse(
-            localStorage.getItem("EXERCISES_STORED") ?? "[]",
+            localStorage.getItem("EXERCISES_STORED") ?? "{}",
         );
-        currentSessions.push(sessionData);
+        currentSessions[sessionData.date] = sessionData;
 
         localStorage.setItem(
             "EXERCISES_STORED",

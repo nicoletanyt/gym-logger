@@ -5,8 +5,9 @@
     import type { ButtonVariant } from "../button/button.svelte";
     import { isEqualMonth, type DateValue } from "@internationalized/date";
     import type { Snippet } from "svelte";
-    import type { Session } from "$lib/types";
+    import type { Session } from "$lib/types.js";
     import { INTENSITY_MAP } from "$lib/constants.js";
+    import * as Dialog from "$lib/components/ui/dialog/index.js";
 
     let {
         ref = $bindable(null),
@@ -23,7 +24,7 @@
         yearFormat = "numeric",
         day,
         disableDaysOutsideMonth = false,
-        data,
+        sessionData,
         ...restProps
     }: WithoutChildrenOrChild<CalendarPrimitive.RootProps> & {
         buttonVariant?: ButtonVariant;
@@ -37,7 +38,7 @@
         monthFormat?: CalendarPrimitive.MonthSelectProps["monthFormat"];
         yearFormat?: CalendarPrimitive.YearSelectProps["yearFormat"];
         day?: Snippet<[{ day: DateValue; outsideMonth: boolean }]>;
-        data: Record<string, number>;
+        sessionData: Record<string, Session>;
     } = $props();
 
     const monthFormat = $derived.by(() => {
@@ -45,90 +46,147 @@
         if (captionLayout.startsWith("dropdown")) return "short";
         return "long";
     });
+
+    let selectedDate = $state<string>("");
+    let selectedSession = $derived(sessionData[selectedDate] ?? null);
+
+    $inspect(sessionData);
+
+    // let calendarData = $derived(
+    //     Object.fromEntries(
+    //         sessionData.map((s: Session) => [s.date, getLevel(s.effort)]),
+    //     ),
+    // );
+
+    function getLevel(effort: number): number {
+        // maps the range from 1-4
+        return Math.round((effort / 5) * 4);
+    }
 </script>
 
 <!--
 Discriminated Unions + Destructing (required for bindable) do not
 get along, so we shut typescript up by casting `value` to `never`.
 -->
-<CalendarPrimitive.Root
-    bind:value={value as never}
-    bind:ref
-    bind:placeholder
-    {weekdayFormat}
-    {disableDaysOutsideMonth}
-    class={cn(
-        "p-3 [--cell-radius:var(--radius-md)] [--cell-size:--spacing(8)] bg-background group/calendar in-data-[slot=card-content]:bg-transparent in-data-[slot=popover-content]:bg-transparent",
-        className,
-    )}
-    {locale}
-    {monthFormat}
-    {yearFormat}
-    {...restProps}
->
-    {#snippet children({ months, weekdays })}
-        <Calendar.Months>
-            <Calendar.Nav>
-                <Calendar.PrevButton variant={buttonVariant} />
-                <Calendar.NextButton variant={buttonVariant} />
-            </Calendar.Nav>
-            {#each months as month, monthIndex (month)}
-                <Calendar.Month>
-                    <Calendar.Header>
-                        <Calendar.Caption
-                            {captionLayout}
-                            months={monthsProp}
-                            {monthFormat}
-                            {years}
-                            {yearFormat}
-                            month={month.value}
-                            bind:placeholder
-                            {locale}
-                            {monthIndex}
-                        />
-                    </Calendar.Header>
-                    <Calendar.Grid class="items-center">
-                        <Calendar.GridHead>
-                            <Calendar.GridRow class="select-none">
-                                {#each weekdays as weekday, i (i)}
-                                    <Calendar.HeadCell>
-                                        {weekday.slice(0, 2)}
-                                    </Calendar.HeadCell>
-                                {/each}
-                            </Calendar.GridRow>
-                        </Calendar.GridHead>
-                        <Calendar.GridBody class="my-2">
-                            {#each month.weeks as weekDates (weekDates)}
-                                <Calendar.GridRow class="w-full">
-                                    {#each weekDates as date (date)}
-                                        <Calendar.Cell
-                                            {date}
-                                            month={month.value}
-                                        >
-                                            {#if day}
-                                                {@render day({
-                                                    day: date,
-                                                    outsideMonth: !isEqualMonth(
-                                                        date,
-                                                        month.value,
-                                                    ),
-                                                })}
-                                            {:else}
-                                                <Calendar.Day
-                                                    class={INTENSITY_MAP[
-                                                        data[date.toString()] ??
-                                                            "bg-transparent"
-                                                    ]}
-                                                />
-                                            {/if}
-                                        </Calendar.Cell>
+
+<Dialog.Root>
+    <CalendarPrimitive.Root
+        bind:value={value as never}
+        bind:ref
+        bind:placeholder
+        {weekdayFormat}
+        {disableDaysOutsideMonth}
+        class={cn(
+            "p-3 [--cell-radius:var(--radius-md)] [--cell-size:--spacing(8)] bg-background group/calendar in-data-[slot=card-content]:bg-transparent in-data-[slot=popover-content]:bg-transparent",
+            className,
+        )}
+        {locale}
+        {monthFormat}
+        {yearFormat}
+        {...restProps}
+    >
+        {#snippet children({ months, weekdays })}
+            <Calendar.Months>
+                <Calendar.Nav>
+                    <Calendar.PrevButton variant={buttonVariant} />
+                    <Calendar.NextButton variant={buttonVariant} />
+                </Calendar.Nav>
+                {#each months as month, monthIndex (month)}
+                    <Calendar.Month>
+                        <Calendar.Header>
+                            <Calendar.Caption
+                                {captionLayout}
+                                months={monthsProp}
+                                {monthFormat}
+                                {years}
+                                {yearFormat}
+                                month={month.value}
+                                bind:placeholder
+                                {locale}
+                                {monthIndex}
+                            />
+                        </Calendar.Header>
+                        <Calendar.Grid class="items-center">
+                            <Calendar.GridHead>
+                                <Calendar.GridRow class="select-none">
+                                    {#each weekdays as weekday, i (i)}
+                                        <Calendar.HeadCell>
+                                            {weekday.slice(0, 2)}
+                                        </Calendar.HeadCell>
                                     {/each}
                                 </Calendar.GridRow>
-                            {/each}
-                        </Calendar.GridBody>
-                    </Calendar.Grid>
-                </Calendar.Month>
-            {/each}
-        </Calendar.Months>
-    {/snippet}
-</CalendarPrimitive.Root>
+                            </Calendar.GridHead>
+                            <Calendar.GridBody class="my-2">
+                                {#each month.weeks as weekDates (weekDates)}
+                                    <Calendar.GridRow class="w-full">
+                                        {#each weekDates as date (date)}
+                                            <Calendar.Cell
+                                                {date}
+                                                month={month.value}
+                                            >
+                                                {#if day}
+                                                    {@render day({
+                                                        day: date,
+                                                        outsideMonth:
+                                                            !isEqualMonth(
+                                                                date,
+                                                                month.value,
+                                                            ),
+                                                    })}
+                                                {:else}
+                                                    <Dialog.Trigger>
+                                                        <Calendar.Day
+                                                            class={INTENSITY_MAP[
+                                                                getLevel(
+                                                                    sessionData[
+                                                                        date.toString()
+                                                                    ]?.effort ??
+                                                                        0,
+                                                                )
+                                                            ]}
+                                                            onclick={() => {
+                                                                selectedDate =
+                                                                    date.toString();
+                                                            }}
+                                                        />
+                                                    </Dialog.Trigger>
+                                                {/if}
+                                            </Calendar.Cell>
+                                        {/each}
+                                    </Calendar.GridRow>
+                                {/each}
+                            </Calendar.GridBody>
+                        </Calendar.Grid>
+                    </Calendar.Month>
+                {/each}
+            </Calendar.Months>
+        {/snippet}
+    </CalendarPrimitive.Root>
+
+    <Dialog.Content>
+        <Dialog.Header>
+            <Dialog.Title>Sessions on {selectedDate}</Dialog.Title>
+        </Dialog.Header>
+
+        {#if selectedSession}
+            <div class="space-y-1">
+                <p>Duration: {selectedSession.duration}</p>
+                <p>Effort: {selectedSession.effort}</p>
+
+                <div>
+                    <p class="font-bold">Exercises:</p>
+                    {#each selectedSession.exercises as exercise}
+                        <p>
+                            {exercise.name}: {exercise.reps} reps, {exercise.sets}
+                            sets
+                        </p>
+                    {:else}
+                        <p>No exercise logged</p>
+                    {/each}
+                </div>
+            </div>
+        {:else}
+            <p>No sessions logged</p>
+        {/if}
+    </Dialog.Content>
+</Dialog.Root>

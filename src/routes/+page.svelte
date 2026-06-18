@@ -5,30 +5,19 @@
     import { Button } from "$lib/components/ui/button/index.js";
     import * as Card from "$lib/components/ui/card/index.js";
     import { onMount } from "svelte";
-    import type { Session } from "$lib/types";
 
     let dateValue = $state(today(getLocalTimeZone()));
 
     let showSessions = $state(false);
     let showRoutines = $state(false);
 
-    let currentSessions = $state([]);
-    let calendarData = $derived(
-        Object.fromEntries(
-            currentSessions.map((s: Session) => [s.date, getLevel(s.effort)]),
-        ),
-    );
+    let sessionData = $state({});
 
     onMount(() => {
-        currentSessions = JSON.parse(
-            localStorage.getItem("EXERCISES_STORED") ?? "[]",
+        sessionData = JSON.parse(
+            localStorage.getItem("EXERCISES_STORED") ?? "{}",
         );
     });
-
-    function getLevel(effort: number): number {
-        // maps the range from 1-4
-        return Math.round((effort / 5) * 4);
-    }
 </script>
 
 <header>
@@ -41,7 +30,7 @@
         bind:value={dateValue}
         class="rounded-md border shadow-sm items-center"
         captionLayout="dropdown"
-        data={calendarData}
+        {sessionData}
     />
 </section>
 
