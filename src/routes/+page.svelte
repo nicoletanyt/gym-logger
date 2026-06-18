@@ -15,7 +15,7 @@
     let currentSessions = $state([]);
     let calendarData = $derived(
         Object.fromEntries(
-            currentSessions.map((s: Session) => [s.date, s.effort]),
+            currentSessions.map((s: Session) => [s.date, getLevel(s.effort)]),
         ),
     );
 
@@ -24,7 +24,11 @@
             localStorage.getItem("EXERCISES_STORED") ?? "[]",
         );
     });
-    $inspect(currentSessions);
+
+    function getLevel(effort: number): number {
+        // maps the range from 1-4
+        return Math.round((effort / 5) * 4);
+    }
 </script>
 
 <header>

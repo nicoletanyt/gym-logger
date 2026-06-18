@@ -7,22 +7,12 @@
     import { Combobox } from "$lib/components/ui/combobox/";
     import type { Exercise, Session } from "$lib/types";
     import { goto } from "$app/navigation";
+    import { DEFAULT_EXERCISE, DEFAULT_SESSION } from "$lib/constants";
 
-    const DEFAULT_SESSION: Session = {
-        duration: 20,
-        effort: 3,
-        exercises: [],
-        date: new Date().toISOString().split("T")[0],
-    };
     let sessionData = $state<Session>(DEFAULT_SESSION);
 
     let exercisesData = $state<Exercise[]>([]);
 
-    const DEFAULT_EXERCISE: Exercise = {
-        name: "Example Exercise",
-        sets: 0,
-        reps: 0,
-    };
     let newExerciseData = $state<Exercise>(DEFAULT_EXERCISE);
 
     let isInput = $state(false);

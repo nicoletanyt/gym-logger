@@ -14,10 +14,11 @@
     class={cn(
         "flex size-(--cell-size) flex-col items-center justify-center gap-1 p-0 leading-none font-normal whitespace-nowrap select-none",
         // "rounded-(--cell-radius)",
-        "[&:last-child[data-selected=true]_button]:rounded-r-(--cell-radius)",
+        // "[&:last-child[data-selected=true]_button]:rounded-r-(--cell-radius)",
         "not-data-selected:hover:bg-accent/50 not-data-selected:hover:text-accent-foreground",
         "[&[data-today]:not([data-selected])]:bg-accent [&[data-today]:not([data-selected])]:text-accent-foreground [&[data-today][data-disabled]]:text-muted-foreground",
-        "data-[selected]:text-primary-foreground data-[selected]:hover:text-foreground",
+        // "data-[selected]:text-primary-foreground data-[selected]:hover:text-foreground",
+        "data-[selected]:border-2 data-[selected]:border-black",
         // "data-[selected]:bg-primary data-[selected]:text-primary-foreground data-[selected]:hover:text-foreground",
         // Outside months
         "[&[data-outside-month]:not([data-selected])]:text-muted-foreground [&[data-outside-month]:not([data-selected])]:hover:text-accent-foreground",

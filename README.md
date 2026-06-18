@@ -1,9 +1,5 @@
 # TODO
 
-2. Heatmap
-   - splits into 4 segments => 4 greens
-   - based on effort
-
 3. Click on calendar date to view session data
    - dialog
 

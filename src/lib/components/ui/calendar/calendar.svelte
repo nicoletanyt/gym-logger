@@ -6,6 +6,7 @@
     import { isEqualMonth, type DateValue } from "@internationalized/date";
     import type { Snippet } from "svelte";
     import type { Session } from "$lib/types";
+    import { INTENSITY_MAP } from "$lib/constants.js";
 
     let {
         ref = $bindable(null),
@@ -113,9 +114,12 @@ get along, so we shut typescript up by casting `value` to `never`.
                                                     ),
                                                 })}
                                             {:else}
-                                                <!-- EFFORT FROM OBJECT  -->
-                                                <!-- {data[date.toString()]} -->
-                                                <Calendar.Day />
+                                                <Calendar.Day
+                                                    class={INTENSITY_MAP[
+                                                        data[date.toString()] ??
+                                                            "bg-transparent"
+                                                    ]}
+                                                />
                                             {/if}
                                         </Calendar.Cell>
                                     {/each}
