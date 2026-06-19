@@ -8,6 +8,7 @@ export interface Session {
     duration: number;
     effort: number;
     exercises: Exercise[];
+    templateId: string;
     date: string;
 }
 

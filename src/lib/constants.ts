@@ -13,6 +13,7 @@ export const DEFAULT_SESSION: Session = {
     duration: 20,
     effort: 3,
     exercises: [],
+    templateId: "custom",
     date: new Date().toISOString().split("T")[0],
 };
 

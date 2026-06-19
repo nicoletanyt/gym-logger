@@ -16,12 +16,13 @@
         ref = $bindable(null),
         options = $bindable<Options[]>(),
         noun,
+        value = $bindable<string>(""),
         class: className = "",
         ...restProps
     } = $props();
 
     let open = $state(false);
-    let value = $state("");
+    // let value = $state("");
     let triggerRef = $state<HTMLButtonElement>(null!);
 
     const selectedValue = $derived(

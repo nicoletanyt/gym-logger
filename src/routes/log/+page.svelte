@@ -4,12 +4,25 @@
     import { Input } from "$lib/components/ui/input/index.js";
     import { Label } from "$lib/components/ui/label/index.js";
     import { Combobox } from "$lib/components/ui/combobox/";
-    import type { Session } from "$lib/types";
+    import type { Routine, Session } from "$lib/types";
     import { goto } from "$app/navigation";
     import { DEFAULT_SESSION } from "$lib/constants";
     import ExerciseManager from "$lib/components/ExerciseManager.svelte";
 
     let sessionData = $state<Session>(DEFAULT_SESSION);
+
+    const routinesOption = $derived([
+        { value: "custom", label: "Custom" },
+        ...JSON.parse(localStorage.getItem("ROUTINES_STORED") ?? "[]").map(
+            (r: Routine) => ({
+                value: r.id,
+                label: r.name,
+            }),
+        ),
+    ]);
+    const routinesData = $derived(
+        JSON.parse(localStorage.getItem("ROUTINES_STORED") ?? "[]"),
+    );
 
     function addSession() {
         const currentSessions = JSON.parse(
@@ -24,6 +37,17 @@
         alert("Session Added!");
         goto("/");
     }
+
+    $effect(() => {
+        if (sessionData.templateId != "custom") {
+            const template = routinesData.find(
+                (r: Routine) => r.id == sessionData.templateId,
+            );
+            sessionData.exercises = template ? [...template.exercises] : [];
+        } else {
+            sessionData.exercises = [];
+        }
+    });
 </script>
 
 <header class="space-y-5 mb-10">
@@ -72,12 +96,8 @@
             <Label class="shrink-0">Routine</Label>
             <Combobox
                 noun="routine"
-                options={[
-                    {
-                        value: "1",
-                        label: "2",
-                    },
-                ]}
+                options={routinesOption}
+                bind:value={sessionData.templateId}
             />
         </div>
     </section>
