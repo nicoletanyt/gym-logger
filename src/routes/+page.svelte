@@ -9,8 +9,11 @@
 
     let dateValue = $state(today(getLocalTimeZone()));
 
-    let showSessions = $state(false);
-    let showRoutines = $state(true);
+    let showSections = $state({
+        sessions: false,
+        routines: true,
+        settings: true,
+    });
 
     let sessionData = $state<Record<string, Session>>({});
     let routinesData = $state<Routine[]>([]);
@@ -24,6 +27,19 @@
         );
     });
 </script>
+
+{#snippet toggleHeading(heading: string, show: boolean, onclick: any)}
+    <div class="flex justify-between items-center">
+        <h2>{heading}</h2>
+        <Button variant="ghost" size="icon-lg" {onclick}>
+            {#if show}
+                <ChevronDown />
+            {:else}
+                <ChevronRight />
+            {/if}
+        </Button>
+    </div>
+{/snippet}
 
 <header>
     <h1 class="text-center">Gym Logger</h1>
@@ -71,42 +87,20 @@
 
 <hr />
 <section>
-    <div class="flex justify-between items-center">
-        <h2>All Sessions</h2>
-        <Button
-            variant="ghost"
-            size="icon-lg"
-            onclick={() => {
-                showSessions = !showSessions;
-            }}
-        >
-            {#if showSessions}
-                <ChevronDown />
-            {:else}
-                <ChevronRight />
-            {/if}
-        </Button>
-    </div>
+    {@render toggleHeading(
+        "All Sessions",
+        showSections.sessions,
+        () => (showSections.sessions = !showSections.sessions),
+    )}
 </section>
 
 <section class="space-y-5">
-    <div class="flex justify-between items-center">
-        <h2>Routines</h2>
-        <Button
-            variant="ghost"
-            size="icon-lg"
-            onclick={() => {
-                showRoutines = !showRoutines;
-            }}
-        >
-            {#if showRoutines}
-                <ChevronDown />
-            {:else}
-                <ChevronRight />
-            {/if}
-        </Button>
-    </div>
-    {#if showRoutines}
+    {@render toggleHeading(
+        "Routines",
+        showSections.routines,
+        () => (showSections.routines = !showSections.routines),
+    )}
+    {#if showSections.routines}
         {#each routinesData as routine}
             <Card.Root size="sm">
                 <Card.Header>
@@ -131,5 +125,29 @@
         {/each}
 
         <Button variant="secondary" href="/routines/new">Create Routine</Button>
+    {/if}
+</section>
+
+<section class="space-y-3">
+    {@render toggleHeading(
+        "Settings",
+        showSections.settings,
+        () => (showSections.settings = !showSections.settings),
+    )}
+
+    {#if showSections.settings}
+        <Button
+            variant="destructive"
+            onclick={() => {
+                if (
+                    confirm(
+                        "Are you sure you want to proceed? The data will be deleted FOREVER D:",
+                    )
+                ) {
+                    localStorage.clear();
+                    location.reload();
+                }
+            }}>Delete Data</Button
+        >
     {/if}
 </section>

@@ -1,7 +1,5 @@
 # TODO
 
-1. templates
-
 2. Display all Sessions data under "All Sessions"
    - Cards
    - Header: Date + day of week (e.g. "Mon, 12 Jun")
