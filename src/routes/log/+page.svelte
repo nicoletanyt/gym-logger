@@ -21,7 +21,7 @@
         ),
     ]);
     const routinesData = $derived(
-        JSON.parse(localStorage.getItem("ROUTINES_STORED") ?? "[]"),
+        JSON.parse(localStorage.getItem("ROUTINES_STORED") ?? "{}"),
     );
 
     function addSession() {
@@ -40,9 +40,7 @@
 
     $effect(() => {
         if (sessionData.templateId != "custom") {
-            const template = routinesData.find(
-                (r: Routine) => r.id == sessionData.templateId,
-            );
+            const template = routinesData[sessionData.templateId];
             sessionData.exercises = template ? [...template.exercises] : [];
         } else {
             sessionData.exercises = [];

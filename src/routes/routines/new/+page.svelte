@@ -12,9 +12,9 @@
 
     function addRoutine() {
         const currentRoutines = JSON.parse(
-            localStorage.getItem("ROUTINES_STORED") ?? "[]",
+            localStorage.getItem("ROUTINES_STORED") ?? "{}",
         );
-        currentRoutines.push({ ...routineData });
+        currentRoutines[routineData.id] = routineData;
 
         localStorage.setItem(
             "ROUTINES_STORED",

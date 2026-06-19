@@ -1,5 +1,11 @@
 # TODO
 
+1. routine detail page
+
+- show the progression of exercises
+  > log the changes of the exercises
+- show how many sessions of this routine
+
 2. Display all Sessions data under "All Sessions"
    - Cards
    - Header: Date + day of week (e.g. "Mon, 12 Jun")

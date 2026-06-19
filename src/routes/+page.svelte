@@ -6,6 +6,7 @@
     import * as Card from "$lib/components/ui/card/index.js";
     import { onMount } from "svelte";
     import type { Routine, Session } from "$lib/types";
+    import { goto } from "$app/navigation";
 
     let dateValue = $state(today(getLocalTimeZone()));
 
@@ -101,8 +102,13 @@
         () => (showSections.routines = !showSections.routines),
     )}
     {#if showSections.routines}
-        {#each routinesData as routine}
-            <Card.Root size="sm">
+        {#each Object.values(routinesData) as routine}
+            <Card.Root
+                size="sm"
+                onclick={() => {
+                    goto("/routines/" + routine.id);
+                }}
+            >
                 <Card.Header>
                     <Card.Title>{routine.name}</Card.Title>
                     <Card.Description>Total Sessions:</Card.Description>
