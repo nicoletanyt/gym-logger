@@ -8,7 +8,6 @@
     import { goto } from "$app/navigation";
     import { DEFAULT_SESSION } from "$lib/constants";
     import ExerciseManager from "$lib/components/ExerciseManager.svelte";
-    import type { Snippet } from "svelte";
 
     let sessionData = $state<Session>(DEFAULT_SESSION);
 

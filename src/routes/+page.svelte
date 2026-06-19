@@ -13,20 +13,14 @@
     let showRoutines = $state(true);
 
     let sessionData = $state<Record<string, Session>>({});
-    let routinesData = $state<Routine[]>([
-        {
-            id: crypto.randomUUID(),
-            name: "Leg Day",
-            exercises: [
-                { name: "bicep curls", sets: 3, reps: 15 },
-                { name: "triceps curls", sets: 3, reps: 15 },
-            ],
-        },
-    ]);
+    let routinesData = $state<Routine[]>([]);
 
     onMount(() => {
         sessionData = JSON.parse(
             localStorage.getItem("EXERCISES_STORED") ?? "{}",
+        );
+        routinesData = JSON.parse(
+            localStorage.getItem("ROUTINES_STORED") ?? "[]",
         );
     });
 </script>
