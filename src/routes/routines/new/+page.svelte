@@ -7,6 +7,7 @@
     import { goto } from "$app/navigation";
     import { DEFAULT_ROUTINE } from "$lib/constants";
     import ExerciseManager from "$lib/components/ExerciseManager.svelte";
+    import BackBtn from "$lib/components/BackBtn.svelte";
 
     let routineData = $state<Routine>(DEFAULT_ROUTINE);
 
@@ -26,10 +27,7 @@
 </script>
 
 <header class="space-y-5 mb-10">
-    <Button variant="outline" href="/">
-        <ChevronLeft />
-        Back
-    </Button>
+    <BackBtn />
     <h1>Create Routine</h1>
 </header>
 

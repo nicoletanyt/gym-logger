@@ -7,6 +7,7 @@
     import ExerciseManager from "$lib/components/ExerciseManager.svelte";
     import ConfirmDialog from "$lib/components/ConfirmDialog.svelte";
     import { goto } from "$app/navigation";
+    import BackBtn from "$lib/components/BackBtn.svelte";
 
     const id = page.params.id ?? "";
 
@@ -33,10 +34,7 @@
 
 <header class="space-y-5 mb-10">
     <div class="flex justify-between">
-        <Button variant="outline" href="/">
-            <ChevronLeft />
-            Back
-        </Button>
+        <BackBtn />
         <ConfirmDialog onconfirm={deleteRoutine}>
             {#snippet trigger()}
                 <Trash2 />

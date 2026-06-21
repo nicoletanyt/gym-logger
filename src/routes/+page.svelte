@@ -5,7 +5,6 @@
     import { Calendar } from "$lib/components/ui/calendar/index.js";
     import { Button } from "$lib/components/ui/button/index.js";
     import * as Card from "$lib/components/ui/card/index.js";
-    import * as AlertDialog from "$lib/components/ui/alert-dialog/index.js";
     import { onMount } from "svelte";
     import type { Routine, Session } from "$lib/types";
     import { goto } from "$app/navigation";
@@ -90,12 +89,44 @@
 </section>
 
 <hr />
-<section>
+<section class="space-y-5">
     {@render toggleHeading(
         "All Sessions",
         showSections.sessions,
         () => (showSections.sessions = !showSections.sessions),
     )}
+
+    {#if showSections.sessions}
+        <div class="flex flex-wrap gap-4">
+            {#each Object.values(sessionData).slice(0, 2) as session}
+                <Card.Root size="sm" class="flex-1 min-w-[40%]">
+                    <Card.Header>
+                        <Card.Title>{session.date}</Card.Title>
+                        <Card.Description
+                            >{session.duration} mins, {session.effort} ★</Card.Description
+                        >
+                    </Card.Header>
+
+                    <Card.Content>
+                        <ul class="list-disc list-inside space-y-1">
+                            {#each session.exercises as exercise}
+                                <li>
+                                    <span class="font-bold"
+                                        >{exercise.name}</span
+                                    >: {exercise.reps}
+                                    reps, {exercise.sets}
+                                    sets
+                                </li>
+                            {/each}
+                        </ul>
+                    </Card.Content>
+                </Card.Root>
+            {:else}
+                <p>No Sessions Created</p>
+            {/each}
+        </div>
+        <Button variant="secondary" href="/sessions">View All</Button>
+    {/if}
 </section>
 
 <section class="space-y-5">

@@ -6,7 +6,7 @@
     import { isEqualMonth, type DateValue } from "@internationalized/date";
     import type { Snippet } from "svelte";
     import type { Session } from "$lib/types.js";
-    import { INTENSITY_MAP } from "$lib/constants.js";
+    import { getLevel, INTENSITY_MAP } from "$lib/constants.js";
     import * as Dialog from "$lib/components/ui/dialog/index.js";
     import * as Popover from "$lib/components/ui/popover/index.js";
 
@@ -50,11 +50,6 @@
 
     let selectedDate = $state<string>("");
     let selectedSession = $derived(sessionData[selectedDate] ?? null);
-
-    function getLevel(effort: number): number {
-        // maps the range from 1-4
-        return Math.round((effort / 5) * 4);
-    }
 </script>
 
 <!--
