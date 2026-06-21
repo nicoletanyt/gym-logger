@@ -1,28 +1,53 @@
 <script lang="ts">
-    import { ChevronLeft } from "@lucide/svelte";
+    import { ChevronLeft, Trash2 } from "@lucide/svelte";
     import { page } from "$app/state";
     import Button from "$lib/components/ui/button/button.svelte";
     import * as Card from "$lib/components/ui/card/index.js";
     import type { Routine } from "$lib/types";
     import ExerciseManager from "$lib/components/ExerciseManager.svelte";
+    import ConfirmDialog from "$lib/components/ConfirmDialog.svelte";
+    import { goto } from "$app/navigation";
 
     const id = page.params.id ?? "";
 
-    const routine = $derived<Routine>(
-        JSON.parse(localStorage.getItem("ROUTINES_STORED") ?? "[]")[id],
+    const routinesData = $derived(
+        JSON.parse(localStorage.getItem("ROUTINES_STORED") ?? "{}"),
     );
+
+    const routine = $derived<Routine>(routinesData[id]);
+
+    let newRoutine = $derived(routine.exercises);
+
+    function deleteRoutine() {
+        delete routinesData[id];
+        localStorage.setItem("ROUTINES_STORED", JSON.stringify(routinesData));
+        goto("/");
+    }
+
+    function saveRoutine() {
+        routinesData[id].exercises = newRoutine;
+        localStorage.setItem("ROUTINES_STORED", JSON.stringify(routinesData));
+        goto("/");
+    }
 </script>
 
 <header class="space-y-5 mb-10">
-    <Button variant="outline" href="/">
-        <ChevronLeft />
-        Back
-    </Button>
+    <div class="flex justify-between">
+        <Button variant="outline" href="/">
+            <ChevronLeft />
+            Back
+        </Button>
+        <ConfirmDialog onconfirm={deleteRoutine}>
+            {#snippet trigger()}
+                <Trash2 />
+            {/snippet}
+        </ConfirmDialog>
+    </div>
     <h1>{routine.name}</h1>
 </header>
 
 <section class="space-y-5">
-    <ExerciseManager bind:exercises={routine.exercises} />
+    <ExerciseManager bind:exercises={newRoutine} />
 </section>
 
 <section>
@@ -34,4 +59,10 @@
             <p></p>
         </Card.Content>
     </Card.Root>
+</section>
+
+<section>
+    <Button variant="secondary" class="bg-green-300" onclick={saveRoutine}>
+        Save Routine
+    </Button>
 </section>

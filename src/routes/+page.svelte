@@ -1,12 +1,15 @@
 <script lang="ts">
     import { ChevronDown, ChevronRight } from "@lucide/svelte";
+    import { buttonVariants } from "$lib/components/ui/button/index.js";
     import { getLocalTimeZone, today } from "@internationalized/date";
     import { Calendar } from "$lib/components/ui/calendar/index.js";
     import { Button } from "$lib/components/ui/button/index.js";
     import * as Card from "$lib/components/ui/card/index.js";
+    import * as AlertDialog from "$lib/components/ui/alert-dialog/index.js";
     import { onMount } from "svelte";
     import type { Routine, Session } from "$lib/types";
     import { goto } from "$app/navigation";
+    import ConfirmDialog from "$lib/components/ConfirmDialog.svelte";
 
     let dateValue = $state(today(getLocalTimeZone()));
 
@@ -142,18 +145,15 @@
     )}
 
     {#if showSections.settings}
-        <Button
-            variant="destructive"
-            onclick={() => {
-                if (
-                    confirm(
-                        "Are you sure you want to proceed? The data will be deleted FOREVER D:",
-                    )
-                ) {
-                    localStorage.clear();
-                    location.reload();
-                }
-            }}>Delete Data</Button
+        <ConfirmDialog
+            onconfirm={() => {
+                localStorage.clear();
+                location.reload();
+            }}
         >
+            {#snippet trigger()}
+                Delete Data
+            {/snippet}
+        </ConfirmDialog>
     {/if}
 </section>

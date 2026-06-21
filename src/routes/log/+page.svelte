@@ -13,12 +13,12 @@
 
     const routinesOption = $derived([
         { value: "custom", label: "Custom" },
-        ...JSON.parse(localStorage.getItem("ROUTINES_STORED") ?? "[]").map(
-            (r: Routine) => ({
-                value: r.id,
-                label: r.name,
-            }),
-        ),
+        ...Object.values<Routine>(
+            JSON.parse(localStorage.getItem("ROUTINES_STORED") ?? "{}"),
+        ).map((r) => ({
+            value: r.id,
+            label: r.name,
+        })),
     ]);
     const routinesData = $derived(
         JSON.parse(localStorage.getItem("ROUTINES_STORED") ?? "{}"),
