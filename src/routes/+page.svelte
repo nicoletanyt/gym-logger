@@ -58,9 +58,12 @@
     />
 </section>
 
-<section>
+<section class="grid gap-3">
     <Button variant="default" class="w-1/2 m-auto" href="/log"
         >Log Session</Button
+    >
+    <Button variant="default" class="w-1/2 m-auto" href="/sessions/new"
+        >New Session</Button
     >
 </section>
 

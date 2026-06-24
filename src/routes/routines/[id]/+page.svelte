@@ -44,9 +44,7 @@
     <h1>{routine.name}</h1>
 </header>
 
-<section class="space-y-5">
-    <ExerciseManager bind:exercises={newRoutine} />
-</section>
+<ExerciseManager bind:exercises={newRoutine} />
 
 <section>
     <Card.Root size="sm">

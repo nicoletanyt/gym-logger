@@ -39,9 +39,7 @@
         </div>
     </section>
 
-    <section class="space-y-5">
-        <ExerciseManager bind:exercises={routineData.exercises} />
-    </section>
+    <ExerciseManager bind:exercises={routineData.exercises} />
 </form>
 
 <section>
