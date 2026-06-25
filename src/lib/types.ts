@@ -38,3 +38,10 @@ export enum RowType {
     GroupHeading,
     ExerciseItem,
 }
+
+export enum InputMode {
+    None,
+    New,
+    EditTable,
+    EditRow,
+}

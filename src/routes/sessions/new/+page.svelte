@@ -22,18 +22,18 @@
 
     $effect(() => {
         // TODO: DELETE. DUMMY DATA
-        sessionData.exercises = [
-            {
-                name: "bicep curls",
-                sets: 3,
-                reps: 15,
-            },
-            {
-                name: "tricep curls",
-                sets: 3,
-                reps: 10,
-            },
-        ];
+        // sessionData.exercises = [
+        //     {
+        //         name: "bicep curls",
+        //         sets: 3,
+        //         reps: 15,
+        //     },
+        //     {
+        //         name: "tricep curls",
+        //         sets: 3,
+        //         reps: 10,
+        //     },
+        // ];
     });
 
     function startSession() {
