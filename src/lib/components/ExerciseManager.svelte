@@ -80,6 +80,10 @@
             (e: Exercise) => !selectedRows.includes(e.id),
         );
         selectedRows = [];
+
+        groups = groups.filter((g: Group) =>
+            exercises.some((e: Exercise) => e.groupId == g.id),
+        );
     }
 
     $effect(() => {
