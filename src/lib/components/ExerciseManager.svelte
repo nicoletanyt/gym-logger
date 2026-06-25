@@ -3,22 +3,21 @@
     import { v4 as uuidv4 } from "uuid";
     import * as Table from "$lib/components/ui/table/index.js";
     import * as Dialog from "$lib/components/ui/dialog/index.js";
+    import { Label } from "$lib/components/ui/label/index.js";
     import { Button, buttonVariants } from "$lib/components/ui/button/index.js";
     import { Input } from "$lib/components/ui/input/index.js";
     import { InputMode, RowType, type Exercise, type Group } from "$lib/types";
-    import { DEFAULT_EXERCISE } from "$lib/constants";
+    import { DEFAULT_EXERCISE, DEFAULT_GROUP } from "$lib/constants";
     import Checkbox from "./ui/checkbox/checkbox.svelte";
 
     let { exercises = $bindable<Exercise[]>() } = $props();
-
     let groups = $state<Group[]>([]);
+
     let newExerciseData = $state<Exercise>(DEFAULT_EXERCISE);
+    let newGroup = $state<Group>(DEFAULT_GROUP);
 
     let mode = $state<InputMode>(InputMode.None);
-    // let isInput = $state(false);
-    // let isEdit = $state(false);
     let selectedRows = $state<string[]>([]);
-    let groupName = $state("");
 
     let isEditRowIndex = $state("");
 
@@ -62,17 +61,14 @@
     }
 
     function createGroup() {
-        const id = uuidv4();
-        const newGroup: Group = {
-            id,
-            name: groupName,
-        };
+        newGroup.id = uuidv4();
         selectedRows.forEach((index) => {
             const e = exercises.find((e: Exercise) => e.id == index);
-            e.groupId = id;
+            e.groupId = newGroup.id;
         });
         selectedRows = [];
         groups.push(newGroup);
+        newGroup = DEFAULT_GROUP;
     }
 
     function deleteExercises() {
@@ -114,7 +110,7 @@
                             <Table.Cell class="w-7"></Table.Cell>
                         {/if}
                         <Table.Cell class="font-bold">{item.name}</Table.Cell>
-                        <Table.Cell class="text-center"></Table.Cell>
+                        <Table.Cell class="text-center">{item.sets}</Table.Cell>
                         <Table.Cell class="text-center"></Table.Cell>
                     </Table.Row>
                 {:else}
@@ -129,7 +125,11 @@
                                 />
                             </Table.Cell>
                         {/if}
-                        <Table.Cell>
+                        <Table.Cell
+                            class={item.groupId && mode == InputMode.None
+                                ? "pl-5"
+                                : ""}
+                        >
                             {#if isEditRowIndex == item.id}
                                 <Input
                                     autofocus
@@ -146,7 +146,7 @@
                                     bind:value={item.sets}
                                     onclick={(e) => e.stopPropagation()}
                                 />
-                            {:else}
+                            {:else if !item.groupId}
                                 {item.sets}
                             {/if}
                         </Table.Cell>
@@ -215,15 +215,32 @@
                             >
                             <Dialog.Content>
                                 <Dialog.Header>
-                                    <Dialog.Title>Enter Group Name</Dialog.Title
-                                    >
-                                    <Dialog.Description
-                                        >Selected Exercises:
+                                    <Dialog.Title>Create Group</Dialog.Title>
+                                    <Dialog.Description>
+                                        Selected Exercises:
                                         <br />
                                         {getSelectedExericses()}
                                     </Dialog.Description>
                                 </Dialog.Header>
-                                <Input bind:value={groupName} />
+                                <div class="space-y-5">
+                                    <div class="flex justify-between">
+                                        <Label class="shrink-0"
+                                            >Group Name</Label
+                                        >
+                                        <Input
+                                            class="w-1/2"
+                                            bind:value={newGroup.name}
+                                        />
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <Label class="shrink-0">Sets</Label>
+                                        <Input
+                                            type="number"
+                                            class="w-1/2"
+                                            bind:value={newGroup.sets}
+                                        />
+                                    </div>
+                                </div>
                                 <Dialog.Footer class="">
                                     <Dialog.Close
                                         class={buttonVariants({

@@ -1,4 +1,4 @@
-import type { Session, Exercise, Routine } from "./types";
+import type { Session, Exercise, Routine, Group } from "./types";
 import { v4 as uuidv4 } from "uuid";
 
 export const INTENSITY_MAP: Record<number, string> = {
@@ -26,14 +26,20 @@ export const DEFAULT_SESSION: Session = {
 export const DEFAULT_EXERCISE: Exercise = {
     id: uuidv4(),
     name: "Example Exercise",
-    sets: 0,
-    reps: 0,
+    sets: 1,
+    reps: 1,
 };
 
 export const DEFAULT_ROUTINE: Routine = {
     id: uuidv4(),
     name: "New Routine",
     exercises: [],
+};
+
+export const DEFAULT_GROUP: Group = {
+    id: "",
+    name: "New Group",
+    sets: 1,
 };
 
 export function getLevel(effort: number): number {

@@ -1,14 +1,15 @@
 export interface Exercise {
     id: string;
     name: string;
-    sets: number;
     reps: number;
+    sets?: number;
     groupId?: string;
 }
 
 export interface Group {
     id: string;
     name: string;
+    sets: number;
 }
 
 export interface ActiveExercise {
