@@ -98,10 +98,12 @@
         </div>
     </section>
 
+    <hr />
+
     <ExerciseManager bind:exercises={sessionData.exercises} />
 </form>
 
-<section>
+<section class="space-y-5 fixed w-full left-0 bottom-0 px-10">
     <Button variant="secondary" class="bg-green-300" onclick={addSession}>
         <Plus />
         Add Session

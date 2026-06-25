@@ -24,6 +24,7 @@ export const DEFAULT_SESSION: Session = {
 };
 
 export const DEFAULT_EXERCISE: Exercise = {
+    id: uuidv4(),
     name: "Example Exercise",
     sets: 0,
     reps: 0,

@@ -1,7 +1,14 @@
 export interface Exercise {
+    id: string;
     name: string;
     sets: number;
     reps: number;
+    groupId?: string;
+}
+
+export interface Group {
+    id: string;
+    name: string;
 }
 
 export interface ActiveExercise {
@@ -24,4 +31,10 @@ export interface Routine {
     id: string;
     name: string;
     exercises: Exercise[];
+}
+
+// ENUMS
+export enum RowType {
+    GroupHeading,
+    ExerciseItem,
 }
