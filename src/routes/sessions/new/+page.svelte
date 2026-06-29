@@ -89,7 +89,9 @@
 </script>
 
 <header class="space-y-5 mb-10">
-    <BackBtn />
+    {#if !isOngoing}
+        <BackBtn />
+    {/if}
     <h1>New Session</h1>
 </header>
 
@@ -178,25 +180,28 @@
                 {formatDuration(elapsed)}
             </span>
         </p>
-    {:else}
-        <Button onclick={startSession}>Start Session</Button>
-    {/if}
 
-    <ConfirmDialog
-        onconfirm={endSession}
-        buttonClass={!isOngoing ? "pointer-events-none opacity-50 " : ""}
-        buttonVar={isOngoing
-            ? isAllDone
-                ? "success"
-                : "destructive"
-            : "default"}
-        title="Confirm end session?"
-        description={isAllDone
-            ? "nice, all exercises are done :)"
-            : "not all exercises are completed... :("}
-    >
-        {#snippet trigger()}
-            End Session
-        {/snippet}
-    </ConfirmDialog>
+        <ConfirmDialog
+            onconfirm={endSession}
+            buttonClass={!isOngoing ? "pointer-events-none opacity-50 " : ""}
+            buttonVar={isOngoing
+                ? isAllDone
+                    ? "success"
+                    : "destructive"
+                : "default"}
+            title="Confirm end session?"
+            description={isAllDone
+                ? "nice, all exercises are done :)"
+                : "not all exercises are completed... :("}
+        >
+            {#snippet trigger()}
+                End Session
+            {/snippet}
+        </ConfirmDialog>
+    {:else}
+        <Button
+            onclick={startSession}
+            disabled={sessionData.exercises.length == 0}>Start Session</Button
+        >
+    {/if}
 </section>

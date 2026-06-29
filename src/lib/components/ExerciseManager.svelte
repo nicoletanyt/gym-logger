@@ -64,6 +64,7 @@
         newGroup.id = uuidv4();
         selectedRows.forEach((index) => {
             const e = exercises.find((e: Exercise) => e.id == index);
+            e.sets = newGroup.sets;
             e.groupId = newGroup.id;
         });
         selectedRows = [];
