@@ -15,8 +15,8 @@ export interface Group {
 export interface ActiveExercise {
     exercise: Exercise;
     currentSet: number;
-    startTimes: Date[];
-    endTimes: Date[];
+    durations: number[];
+    prevStart: Date;
 }
 
 export interface Session {
