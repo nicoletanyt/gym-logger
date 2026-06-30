@@ -1,8 +1,15 @@
 <script lang="ts">
     import favicon from "$lib/assets/favicon.svg";
+    import { onMount } from "svelte";
     import "../app.css";
+    import { sessionManager } from "$lib/Session.svelte";
 
     let { children } = $props();
+
+    onMount(() => {
+        // init managers
+        sessionManager.loadData();
+    });
 </script>
 
 <svelte:head>

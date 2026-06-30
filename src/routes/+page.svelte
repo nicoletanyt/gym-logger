@@ -6,9 +6,10 @@
     import { Button } from "$lib/components/ui/button/index.js";
     import * as Card from "$lib/components/ui/card/index.js";
     import { onMount } from "svelte";
-    import type { Routine, Session } from "$lib/types";
+    import type { Routine } from "$lib/types";
     import { goto } from "$app/navigation";
     import ConfirmDialog from "$lib/components/ConfirmDialog.svelte";
+    import { sessionManager, type Session } from "$lib/Session.svelte";
 
     let dateValue = $state(today(getLocalTimeZone()));
 
@@ -18,13 +19,9 @@
         settings: true,
     });
 
-    let sessionData = $state<Record<string, Session>>({});
     let routinesData = $state<Routine[]>([]);
 
     onMount(() => {
-        sessionData = JSON.parse(
-            localStorage.getItem("EXERCISES_STORED") ?? "{}",
-        );
         routinesData = JSON.parse(
             localStorage.getItem("ROUTINES_STORED") ?? "[]",
         );
@@ -54,7 +51,7 @@
         bind:value={dateValue}
         class="rounded-md border shadow-sm items-center"
         captionLayout="dropdown"
-        {sessionData}
+        sessionData={sessionManager.sessions}
     />
 </section>
 
@@ -73,7 +70,7 @@
             <Card.Title>Total Sessions</Card.Title>
         </Card.Header>
         <Card.Content>
-            <p>{Object.keys(sessionData).length}</p>
+            <p>{sessionManager.getCount()}</p>
         </Card.Content>
     </Card.Root>
     <Card.Root>
@@ -81,12 +78,7 @@
             <Card.Title>Total Time</Card.Title>
         </Card.Header>
         <Card.Content>
-            <p>
-                {Object.values(sessionData).reduce(
-                    (acc, curr: Session) => acc + curr.duration,
-                    0,
-                )}
-            </p>
+            <p>{sessionManager.getTotalDuration()}</p>
         </Card.Content>
     </Card.Root>
 </section>
@@ -101,7 +93,7 @@
 
     {#if showSections.sessions}
         <div class="flex flex-wrap gap-4">
-            {#each Object.values(sessionData).slice(0, 2) as session}
+            {#each Object.values(sessionManager.sessions).slice(0, 2) as session}
                 <Card.Root size="sm" class="flex-1 min-w-[40%]">
                     <Card.Header>
                         <Card.Title>{session.date}</Card.Title>

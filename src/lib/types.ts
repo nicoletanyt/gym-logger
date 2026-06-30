@@ -19,15 +19,6 @@ export interface ActiveExercise {
     prevStart: Date;
 }
 
-export interface Session {
-    duration: number;
-    effort: number;
-    exercises: Exercise[];
-    templateId: string;
-    date: string;
-    startTime?: Date;
-}
-
 export interface Routine {
     id: string;
     name: string;

@@ -1,17 +1,21 @@
 <script lang="ts">
-    import { v4 as uuidv4 } from "uuid";
     import BackBtn from "$lib/components/BackBtn.svelte";
     import ExerciseManager from "$lib/components/ExerciseManager.svelte";
     import Button from "$lib/components/ui/button/button.svelte";
     import { Input } from "$lib/components/ui/input/index.js";
     import { Label } from "$lib/components/ui/label/index.js";
     import { Checkbox } from "$lib/components/ui/checkbox/index.js";
-    import { DEFAULT_SESSION } from "$lib/constants";
-    import type { Session, ActiveExercise } from "$lib/types";
+    import type { ActiveExercise } from "$lib/types";
     import ConfirmDialog from "$lib/components/ConfirmDialog.svelte";
     import { goto } from "$app/navigation";
+    import {
+        DEFAULT_SESSION,
+        sessionManager,
+        type Session,
+    } from "$lib/Session.svelte";
+    import type { Result } from "$lib/constants";
 
-    let sessionData = $state<Session>(DEFAULT_SESSION);
+    let newSession = $state<Session>(DEFAULT_SESSION);
     let isOngoing = $state(false);
     let activeExercises = $state<ActiveExercise[]>([]);
 
@@ -50,12 +54,12 @@
     });
 
     function startSession() {
-        sessionData.startTime = new Date();
+        newSession.startTime = new Date();
         isOngoing = true;
         // init active exercises
-        for (let i = 0; i < sessionData.exercises.length; i++) {
+        for (let i = 0; i < newSession.exercises.length; i++) {
             activeExercises.push({
-                exercise: sessionData.exercises[i],
+                exercise: newSession.exercises[i],
                 currentSet: 0,
                 durations: [],
                 prevStart: new Date(),
@@ -64,7 +68,12 @@
     }
     function endSession() {
         isOngoing = false;
-        goto("/");
+        newSession.duration = Math.floor(elapsed / 60);
+        // TODO: newSession.effort
+        const result = sessionManager.addSession(newSession);
+
+        alert(result.success ? "Session Added!" : result.message);
+        if (result.success) goto("/");
     }
 
     function formatDuration(seconds: number) {
@@ -99,7 +108,7 @@
     {#if isOngoing}
         <p>
             Date: <span class="font-bold">
-                {sessionData.date}
+                {newSession.date}
             </span>
         </p>
     {:else}
@@ -109,7 +118,7 @@
                 disabled={isOngoing}
                 type="date"
                 class="w-1/2"
-                bind:value={sessionData.date}
+                bind:value={newSession.date}
             />
         </div>
     {/if}
@@ -118,7 +127,7 @@
 <hr />
 
 {#if !isOngoing}
-    <ExerciseManager bind:exercises={sessionData.exercises} />
+    <ExerciseManager bind:exercises={newSession.exercises} />
 {:else}
     <section class="space-y-8">
         {#each activeExercises as item}
@@ -130,7 +139,6 @@
                         {@const checked = i < item.currentSet}
                         {@const worse = Math.max(...item.durations)}
                         {@const best = Math.min(...item.durations)}
-                        {console.log(best, " ", worse)}
                         <div class="flex items-center justify-between">
                             <div class="space-x-3 flex items-center">
                                 <Checkbox
@@ -201,7 +209,7 @@
     {:else}
         <Button
             onclick={startSession}
-            disabled={sessionData.exercises.length == 0}>Start Session</Button
+            disabled={newSession.exercises.length == 0}>Start Session</Button
         >
     {/if}
 </section>

@@ -1,5 +1,9 @@
-import type { Session, Exercise, Routine, Group } from "./types";
+import type { Exercise, Routine, Group } from "./types";
 import { v4 as uuidv4 } from "uuid";
+
+export const STORAGE_KEYS: Record<string, string> = {
+    sessions: "SESSIONS_STORED",
+};
 
 export const INTENSITY_MAP: Record<number, string> = {
     0: "bg-transparent",
@@ -14,14 +18,7 @@ export const INTENSITY_MAP: Record<number, string> = {
     // 4: "bg-green-700!",
 };
 
-// log
-export const DEFAULT_SESSION: Session = {
-    duration: 20,
-    effort: 3,
-    exercises: [],
-    templateId: "custom",
-    date: new Date().toISOString().split("T")[0],
-};
+export type Result = { success: true } | { success: false; message: string };
 
 export const DEFAULT_EXERCISE: Exercise = {
     id: uuidv4(),

@@ -5,10 +5,10 @@
     import type { ButtonVariant } from "../button/button.svelte";
     import { isEqualMonth, type DateValue } from "@internationalized/date";
     import type { Snippet } from "svelte";
-    import type { Session } from "$lib/types.js";
     import { getLevel, INTENSITY_MAP } from "$lib/constants.js";
     import * as Dialog from "$lib/components/ui/dialog/index.js";
     import * as Popover from "$lib/components/ui/popover/index.js";
+    import type { Session } from "$lib/Session.js";
 
     let {
         ref = $bindable(null),

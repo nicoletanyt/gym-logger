@@ -4,11 +4,15 @@
     import { Input } from "$lib/components/ui/input/index.js";
     import { Label } from "$lib/components/ui/label/index.js";
     import { Combobox } from "$lib/components/ui/combobox/";
-    import type { Routine, Session } from "$lib/types";
+    import type { Routine } from "$lib/types";
     import { goto } from "$app/navigation";
-    import { DEFAULT_SESSION } from "$lib/constants";
     import ExerciseManager from "$lib/components/ExerciseManager.svelte";
     import BackBtn from "$lib/components/BackBtn.svelte";
+    import {
+        DEFAULT_SESSION,
+        type Session,
+        sessionManager,
+    } from "$lib/Session.svelte";
 
     let sessionData = $state<Session>(DEFAULT_SESSION);
 
@@ -25,23 +29,9 @@
         JSON.parse(localStorage.getItem("ROUTINES_STORED") ?? "{}"),
     );
 
-    function addSession() {
-        const currentSessions = JSON.parse(
-            localStorage.getItem("EXERCISES_STORED") ?? "{}",
-        );
-        currentSessions[sessionData.date] = sessionData;
-
-        localStorage.setItem(
-            "EXERCISES_STORED",
-            JSON.stringify(currentSessions),
-        );
-        alert("Session Added!");
-        goto("/");
-    }
-
     $effect(() => {
-        if (sessionData.templateId != "custom") {
-            const template = routinesData[sessionData.templateId];
+        if (sessionData.routineId != "custom") {
+            const template = routinesData[sessionData.routineId];
             sessionData.exercises = template ? [...template.exercises] : [];
         } else {
             sessionData.exercises = [];
@@ -93,7 +83,7 @@
             <Combobox
                 noun="routine"
                 options={routinesOption}
-                bind:value={sessionData.templateId}
+                bind:value={sessionData.routineId}
             />
         </div>
     </section>
@@ -104,7 +94,16 @@
 </form>
 
 <section class="space-y-5 fixed w-full left-0 bottom-0 px-10">
-    <Button variant="secondary" class="bg-green-300" onclick={addSession}>
+    <Button
+        variant="secondary"
+        class="bg-green-300"
+        onclick={() => {
+            const result = sessionManager.addSession(sessionData);
+
+            alert(result.success ? "Session Added!" : result.message);
+            if (result.success) goto("/");
+        }}
+    >
         <Plus />
         Add Session
     </Button>
