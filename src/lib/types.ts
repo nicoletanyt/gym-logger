@@ -19,12 +19,6 @@ export interface ActiveExercise {
     prevStart: Date;
 }
 
-export interface Routine {
-    id: string;
-    name: string;
-    exercises: Exercise[];
-}
-
 // ENUMS
 export enum RowType {
     GroupHeading,

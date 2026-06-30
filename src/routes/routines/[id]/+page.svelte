@@ -1,33 +1,25 @@
 <script lang="ts">
-    import { ChevronLeft, Trash2 } from "@lucide/svelte";
+    import { Trash2 } from "@lucide/svelte";
     import { page } from "$app/state";
     import Button from "$lib/components/ui/button/button.svelte";
     import * as Card from "$lib/components/ui/card/index.js";
-    import type { Routine } from "$lib/types";
     import ExerciseManager from "$lib/components/ExerciseManager.svelte";
     import ConfirmDialog from "$lib/components/ConfirmDialog.svelte";
     import { goto } from "$app/navigation";
     import BackBtn from "$lib/components/BackBtn.svelte";
+    import { routineManager } from "$lib/Routine.svelte";
 
     const id = page.params.id ?? "";
 
-    const routinesData = $derived(
-        JSON.parse(localStorage.getItem("ROUTINES_STORED") ?? "{}"),
-    );
-
-    const routine = $derived<Routine>(routinesData[id]);
-
-    let newRoutine = $derived(routine.exercises);
+    const routine = $state(routineManager.getById(id));
 
     function deleteRoutine() {
-        delete routinesData[id];
-        localStorage.setItem("ROUTINES_STORED", JSON.stringify(routinesData));
+        routineManager.deleteRoutine(id);
         goto("/");
     }
 
-    function saveRoutine() {
-        routinesData[id].exercises = newRoutine;
-        localStorage.setItem("ROUTINES_STORED", JSON.stringify(routinesData));
+    function updateRoutine() {
+        routineManager.updateRoutine(routine);
         goto("/");
     }
 </script>
@@ -44,21 +36,22 @@
     <h1>{routine.name}</h1>
 </header>
 
-<ExerciseManager bind:exercises={newRoutine} />
+<ExerciseManager bind:exercises={routine.exercises} />
 
-<section>
-    <Card.Root size="sm">
-        <Card.Header>
-            <Card.Title>Total Sessions</Card.Title>
-        </Card.Header>
-        <Card.Content>
-            <p></p>
-        </Card.Content>
-    </Card.Root>
-</section>
+<!-- TODO: -->
+<!-- <section> -->
+<!--     <Card.Root size="sm"> -->
+<!--         <Card.Header> -->
+<!--             <Card.Title>Total Sessions</Card.Title> -->
+<!--         </Card.Header> -->
+<!--         <Card.Content> -->
+<!--             <p></p> -->
+<!--         </Card.Content> -->
+<!--     </Card.Root> -->
+<!-- </section> -->
 
-<section>
-    <Button variant="secondary" class="bg-green-300" onclick={saveRoutine}>
+<section class="space-y-5 fixed w-full left-0 bottom-0 px-10">
+    <Button variant="secondary" class="bg-green-300" onclick={updateRoutine}>
         Save Routine
     </Button>
 </section>

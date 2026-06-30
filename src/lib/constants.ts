@@ -1,8 +1,9 @@
-import type { Exercise, Routine, Group } from "./types";
+import type { Exercise, Group } from "./types";
 import { v4 as uuidv4 } from "uuid";
 
 export const STORAGE_KEYS: Record<string, string> = {
     sessions: "SESSIONS_STORED",
+    routines: "ROUTINES_STORED",
 };
 
 export const INTENSITY_MAP: Record<number, string> = {
@@ -11,11 +12,6 @@ export const INTENSITY_MAP: Record<number, string> = {
     2: "bg-green-500/40",
     3: "bg-green-500/60",
     4: "bg-green-500/80",
-    // 0: "bg-transparent",
-    // 1: "bg-green-200!",
-    // 2: "bg-green-300!",
-    // 3: "bg-green-500!",
-    // 4: "bg-green-700!",
 };
 
 export type Result = { success: true } | { success: false; message: string };
@@ -25,12 +21,6 @@ export const DEFAULT_EXERCISE: Exercise = {
     name: "Example Exercise",
     sets: 1,
     reps: 1,
-};
-
-export const DEFAULT_ROUTINE: Routine = {
-    id: uuidv4(),
-    name: "New Routine",
-    exercises: [],
 };
 
 export const DEFAULT_GROUP: Group = {

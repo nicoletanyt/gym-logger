@@ -1,15 +1,13 @@
 <script lang="ts">
     import { ChevronDown, ChevronRight } from "@lucide/svelte";
-    import { buttonVariants } from "$lib/components/ui/button/index.js";
     import { getLocalTimeZone, today } from "@internationalized/date";
     import { Calendar } from "$lib/components/ui/calendar/index.js";
     import { Button } from "$lib/components/ui/button/index.js";
     import * as Card from "$lib/components/ui/card/index.js";
-    import { onMount } from "svelte";
-    import type { Routine } from "$lib/types";
     import { goto } from "$app/navigation";
     import ConfirmDialog from "$lib/components/ConfirmDialog.svelte";
-    import { sessionManager, type Session } from "$lib/Session.svelte";
+    import { sessionManager } from "$lib/Session.svelte";
+    import { routineManager } from "$lib/Routine.svelte";
 
     let dateValue = $state(today(getLocalTimeZone()));
 
@@ -17,14 +15,6 @@
         sessions: false,
         routines: true,
         settings: true,
-    });
-
-    let routinesData = $state<Routine[]>([]);
-
-    onMount(() => {
-        routinesData = JSON.parse(
-            localStorage.getItem("ROUTINES_STORED") ?? "[]",
-        );
     });
 </script>
 
@@ -131,7 +121,7 @@
         () => (showSections.routines = !showSections.routines),
     )}
     {#if showSections.routines}
-        {#each Object.values(routinesData) as routine}
+        {#each routineManager.routines as routine}
             <Card.Root
                 size="sm"
                 onclick={() => {

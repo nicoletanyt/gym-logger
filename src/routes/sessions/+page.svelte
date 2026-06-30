@@ -1,16 +1,7 @@
 <script lang="ts">
     import * as Card from "$lib/components/ui/card/index.js";
-    import type { Session } from "$lib/types";
-    import { onMount } from "svelte";
     import BackBtn from "$lib/components/BackBtn.svelte";
-    import { getLevel, INTENSITY_MAP } from "$lib/constants";
-
-    let sessionData = $state<Record<string, Session>>({});
-    onMount(() => {
-        sessionData = JSON.parse(
-            localStorage.getItem("EXERCISES_STORED") ?? "{}",
-        );
-    });
+    import { sessionManager } from "$lib/Session.svelte";
 </script>
 
 <header class="space-y-5 mb-10">
@@ -19,7 +10,7 @@
 </header>
 
 <div class="grid gap-4">
-    {#each Object.values(sessionData).slice(0, 2) as session}
+    {#each Object.values(sessionManager.sessions) as session}
         <Card.Root>
             <Card.Header>
                 <Card.Title class="flex justify-between">

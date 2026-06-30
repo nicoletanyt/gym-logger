@@ -49,7 +49,6 @@ class SessionManager {
         this.updateData();
         return { success: true };
     }
-    addWithRoutine() { }
 
     // for stats
     getCount() {
