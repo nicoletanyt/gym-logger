@@ -4,6 +4,7 @@ export interface Exercise {
     reps: number;
     sets?: number;
     groupId?: string;
+    avgDuration: number;
 }
 
 export interface Group {

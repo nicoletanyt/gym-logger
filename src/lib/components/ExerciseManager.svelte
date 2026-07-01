@@ -10,7 +10,7 @@
     import { DEFAULT_EXERCISE, DEFAULT_GROUP } from "$lib/constants";
     import Checkbox from "./ui/checkbox/checkbox.svelte";
 
-    let { exercises = $bindable<Exercise[]>() } = $props();
+    let { exercises = $bindable<Exercise[]>(), canEdit = true } = $props();
     let groups = $state<Group[]>([]);
 
     let newExerciseData = $state<Exercise>(DEFAULT_EXERCISE);
@@ -91,101 +91,95 @@
     });
 </script>
 
-<section class="space-y-5">
-    <Table.Root>
-        <Table.Header>
-            <Table.Row>
-                {#if mode == InputMode.EditTable}
-                    <Table.Head class="w-7"></Table.Head>
-                {/if}
-                <Table.Head>Exercise</Table.Head>
-                <Table.Head class="w-1/4 text-center">Sets</Table.Head>
-                <Table.Head class="w-1/4 text-center">Reps</Table.Head>
-            </Table.Row>
-        </Table.Header>
-        <Table.Body>
-            {#each rows as { type, data: item }}
-                {#if type == RowType.GroupHeading}
-                    <Table.Row>
-                        {#if mode == InputMode.EditTable}
-                            <Table.Cell class="w-7"></Table.Cell>
-                        {/if}
-                        <Table.Cell class="font-bold">{item.name}</Table.Cell>
-                        <Table.Cell class="text-center">{item.sets}</Table.Cell>
-                        <Table.Cell class="text-center"></Table.Cell>
-                    </Table.Row>
-                {:else}
-                    <Table.Row
-                        onclick={() => selectRow(item.id)}
-                        class={item.groupId ? "bg-muted/50" : ""}
-                    >
-                        {#if mode == InputMode.EditTable}
-                            <Table.Cell class="w-7">
-                                <Checkbox
-                                    checked={selectedRows.includes(item.id)}
-                                />
-                            </Table.Cell>
-                        {/if}
-                        <Table.Cell
-                            class={item.groupId && mode == InputMode.None
-                                ? "pl-5"
-                                : ""}
-                        >
-                            {#if isEditRowIndex == item.id}
-                                <Input
-                                    autofocus
-                                    bind:value={item.name}
-                                    onclick={(e) => e.stopPropagation()}
-                                />
-                            {:else}
-                                {item.name}
-                            {/if}
-                        </Table.Cell>
-                        <Table.Cell class="text-center">
-                            {#if isEditRowIndex == item.id}
-                                <Input
-                                    bind:value={item.sets}
-                                    onclick={(e) => e.stopPropagation()}
-                                />
-                            {:else if !item.groupId}
-                                {item.sets}
-                            {/if}
-                        </Table.Cell>
-                        <Table.Cell class="text-center">
-                            {#if isEditRowIndex == item.id}
-                                <Input
-                                    bind:value={item.reps}
-                                    onclick={(e) => e.stopPropagation()}
-                                />
-                            {:else}
-                                {item.reps}
-                            {/if}
-                        </Table.Cell>
-                    </Table.Row>
-                {/if}
-            {/each}
-            {#if mode == InputMode.New}
+<Table.Root>
+    <Table.Header>
+        <Table.Row>
+            {#if mode == InputMode.EditTable}
+                <Table.Head class="w-7"></Table.Head>
+            {/if}
+            <Table.Head>Exercise</Table.Head>
+            <Table.Head class="w-1/4 text-center">Sets</Table.Head>
+            <Table.Head class="w-1/4 text-center">Reps</Table.Head>
+        </Table.Row>
+    </Table.Header>
+    <Table.Body>
+        {#each rows as { type, data: item }}
+            {#if type == RowType.GroupHeading}
                 <Table.Row>
-                    <Table.Cell>
-                        <Input bind:value={newExerciseData.name} />
+                    {#if mode == InputMode.EditTable}
+                        <Table.Cell class="w-7"></Table.Cell>
+                    {/if}
+                    <Table.Cell class="font-bold">{item.name}</Table.Cell>
+                    <Table.Cell class="text-center">{item.sets}</Table.Cell>
+                    <Table.Cell class="text-center"></Table.Cell>
+                </Table.Row>
+            {:else}
+                <Table.Row
+                    onclick={() => selectRow(item.id)}
+                    class={item.groupId ? "bg-muted/50" : ""}
+                >
+                    {#if mode == InputMode.EditTable}
+                        <Table.Cell class="w-7">
+                            <Checkbox
+                                checked={selectedRows.includes(item.id)}
+                            />
+                        </Table.Cell>
+                    {/if}
+                    <Table.Cell
+                        class={item.groupId && mode == InputMode.None
+                            ? "pl-5"
+                            : ""}
+                    >
+                        {#if isEditRowIndex == item.id}
+                            <Input
+                                autofocus
+                                bind:value={item.name}
+                                onclick={(e) => e.stopPropagation()}
+                            />
+                        {:else}
+                            {item.name}
+                        {/if}
                     </Table.Cell>
                     <Table.Cell class="text-center">
-                        <Input
-                            type="number"
-                            bind:value={newExerciseData.sets}
-                        />
+                        {#if isEditRowIndex == item.id}
+                            <Input
+                                bind:value={item.sets}
+                                onclick={(e) => e.stopPropagation()}
+                            />
+                        {:else if !item.groupId}
+                            {item.sets}
+                        {/if}
                     </Table.Cell>
                     <Table.Cell class="text-center">
-                        <Input
-                            type="number"
-                            bind:value={newExerciseData.reps}
-                        />
+                        {#if isEditRowIndex == item.id}
+                            <Input
+                                bind:value={item.reps}
+                                onclick={(e) => e.stopPropagation()}
+                            />
+                        {:else}
+                            {item.reps}
+                        {/if}
                     </Table.Cell>
                 </Table.Row>
             {/if}
-        </Table.Body>
-    </Table.Root>
+        {/each}
+        {#if mode == InputMode.New}
+            <Table.Row>
+                <Table.Cell>
+                    <Input bind:value={newExerciseData.name} />
+                </Table.Cell>
+                <Table.Cell class="text-center">
+                    <Input type="number" bind:value={newExerciseData.sets} />
+                </Table.Cell>
+                <Table.Cell class="text-center">
+                    <Input type="number" bind:value={newExerciseData.reps} />
+                </Table.Cell>
+            </Table.Row>
+        {/if}
+    </Table.Body>
+</Table.Root>
 
+{#if canEdit}
     <div class="flex justify-end gap-2">
         {#if mode != InputMode.None}
             {#if mode == InputMode.EditTable}
@@ -298,4 +292,4 @@
             </Button>
         {/if}
     </div>
-</section>
+{/if}

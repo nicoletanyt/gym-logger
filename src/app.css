@@ -128,7 +128,10 @@
   }
 
   section {
-    @apply my-10 grid;
+    @apply my-10 grid space-y-5;
+  }
+  header {
+    @apply space-y-5 mb-10;
   }
 
   html {

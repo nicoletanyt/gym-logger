@@ -15,7 +15,7 @@
     let newRoutine = $state<Routine>(DEFAULT_ROUTINE);
 </script>
 
-<header class="space-y-5 mb-10">
+<header>
     <BackBtn />
     <h1>Create Routine</h1>
 </header>
@@ -28,10 +28,12 @@
         </div>
     </section>
 
-    <ExerciseManager bind:exercises={newRoutine.exercises} />
+    <section>
+        <ExerciseManager bind:exercises={newRoutine.exercises} />
+    </section>
 </form>
 
-<section class="space-y-5 fixed w-full left-0 bottom-0 px-10">
+<section class="fixed w-full left-0 bottom-0 px-10">
     <Button
         variant="secondary"
         class="bg-green-300"

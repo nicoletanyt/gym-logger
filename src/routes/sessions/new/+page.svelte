@@ -13,11 +13,11 @@
         sessionManager,
         type Session,
     } from "$lib/Session.svelte";
-    import type { Result } from "$lib/constants";
     import Combobox from "$lib/components/ui/combobox/combobox.svelte";
     import { routineManager } from "$lib/Routine.svelte";
+    import { formatDuration } from "$lib/constants";
 
-    let newSession = $state<Session>(DEFAULT_SESSION);
+    // let sessionManager.activeSession = $state<Session>(DEFAULT_SESSION);
     let isOngoing = $state(false);
     let activeExercises = $state<ActiveExercise[]>([]);
 
@@ -30,24 +30,6 @@
     );
 
     $effect(() => {
-        // TODO: DELETE. DUMMY DATA
-        // sessionData.exercises = [
-        //     {
-        //         id: uuidv4(),
-        //         name: "bicep curls",
-        //         sets: 3,
-        //         reps: 15,
-        //     },
-        //     {
-        //         id: uuidv4(),
-        //         name: "tricep curls",
-        //         sets: 3,
-        //         reps: 10,
-        //     },
-        // ];
-    });
-
-    $effect(() => {
         if (!isOngoing) return;
         const interval = setInterval(() => {
             elapsed++;
@@ -56,12 +38,16 @@
     });
 
     function startSession() {
-        newSession.startTime = new Date();
+        sessionManager.activeSession.startTime = new Date();
         isOngoing = true;
         // init active exercises
-        for (let i = 0; i < newSession.exercises.length; i++) {
+        for (
+            let i = 0;
+            i < sessionManager.activeSession.exercises.length;
+            i++
+        ) {
             activeExercises.push({
-                exercise: newSession.exercises[i],
+                exercise: sessionManager.activeSession.exercises[i],
                 currentSet: 0,
                 durations: [],
                 prevStart: new Date(),
@@ -70,26 +56,20 @@
     }
     function endSession() {
         isOngoing = false;
-        newSession.duration = Math.floor(elapsed / 60);
-        // TODO: newSession.effort
-        const result = sessionManager.addSession(newSession);
-
-        alert(result.success ? "Session Added!" : result.message);
-        if (result.success) goto("/");
-    }
-
-    function formatDuration(seconds: number) {
-        if (seconds < 60) {
-            return `${seconds}s`;
+        sessionManager.activeSession.duration = elapsed;
+        for (
+            let i = 0;
+            i < sessionManager.activeSession.exercises.length;
+            i++
+        ) {
+            sessionManager.activeSession.exercises[i].avgDuration =
+                activeExercises[i].durations.reduce(
+                    (sum, current) => sum + current,
+                    0,
+                ) / activeExercises[i].durations.length;
         }
-        let mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
 
-        if (mins < 60) return `${mins}m ${secs.toString().padStart(2, "0")}s`;
-
-        const hours = Math.floor(mins / 60);
-        mins %= 60;
-        return `${hours}h ${mins.toString().padStart(2, "0")}m ${secs.toString().padStart(2, "0")}s`;
+        goto("/sessions/summary");
     }
 
     function getDuration(startTime: Date, endTime: Date) {
@@ -99,11 +79,11 @@
     }
 
     $effect(() => {
-        sessionManager.applyRoutine(newSession);
+        sessionManager.applyRoutine(sessionManager.activeSession);
     });
 </script>
 
-<header class="space-y-5 mb-10">
+<header>
     {#if !isOngoing}
         <BackBtn />
     {/if}
@@ -114,7 +94,7 @@
     {#if isOngoing}
         <p>
             Date: <span class="font-bold">
-                {newSession.date}
+                {sessionManager.activeSession.date}
             </span>
         </p>
     {:else}
@@ -124,7 +104,7 @@
                 disabled={isOngoing}
                 type="date"
                 class="w-1/2"
-                bind:value={newSession.date}
+                bind:value={sessionManager.activeSession.date}
             />
         </div>
         <div class="flex justify-between">
@@ -132,7 +112,7 @@
             <Combobox
                 noun="routine"
                 options={routineManager.options}
-                bind:value={newSession.routineId}
+                bind:value={sessionManager.activeSession.routineId}
             />
         </div>
     {/if}
@@ -141,7 +121,11 @@
 <hr />
 
 {#if !isOngoing}
-    <ExerciseManager bind:exercises={newSession.exercises} />
+    <section>
+        <ExerciseManager
+            bind:exercises={sessionManager.activeSession.exercises}
+        />
+    </section>
 {:else}
     <section class="space-y-8">
         {#each activeExercises as item}
@@ -194,7 +178,7 @@
     </section>
 {/if}
 
-<section class="space-y-5 fixed w-full left-0 bottom-0 px-10">
+<section class="fixed w-full left-0 bottom-0 px-10">
     {#if isOngoing}
         <p class="mx-auto">
             Elapsed:
@@ -223,7 +207,8 @@
     {:else}
         <Button
             onclick={startSession}
-            disabled={newSession.exercises.length == 0}>Start Session</Button
+            disabled={sessionManager.activeSession.exercises.length == 0}
+            >Start Session</Button
         >
     {/if}
 </section>

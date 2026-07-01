@@ -25,7 +25,7 @@
     }
 </script>
 
-<header class="space-y-5 mb-10">
+<header>
     <div class="flex justify-between">
         <BackBtn />
         <div class="space-x-3">
@@ -55,7 +55,9 @@
     {/if}
 </header>
 
-<ExerciseManager bind:exercises={routine.exercises} />
+<section>
+    <ExerciseManager bind:exercises={routine.exercises} />
+</section>
 
 <!-- TODO: -->
 <!-- <section> -->
@@ -69,7 +71,7 @@
 <!--     </Card.Root> -->
 <!-- </section> -->
 
-<section class="space-y-5 fixed w-full left-0 bottom-0 px-10">
+<section class="fixed w-full left-0 bottom-0 px-10">
     <Button variant="secondary" class="bg-green-300" onclick={updateRoutine}>
         Save Routine
     </Button>

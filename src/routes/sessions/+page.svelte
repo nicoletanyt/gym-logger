@@ -4,7 +4,7 @@
     import { sessionManager } from "$lib/Session.svelte";
 </script>
 
-<header class="space-y-5 mb-10">
+<header>
     <BackBtn />
     <h1>Sessions</h1>
 </header>

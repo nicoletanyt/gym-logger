@@ -24,6 +24,7 @@ export const DEFAULT_SESSION: Session = {
 
 class SessionManager {
     sessions = $state<Record<string, Session>>({});
+    activeSession = $state<Session>(DEFAULT_SESSION);
 
     loadData() {
         this.sessions = JSON.parse(
@@ -42,13 +43,17 @@ class SessionManager {
         if (newSession.duration <= 0)
             return {
                 success: false,
-                message:
-                    "duration needs to be > 0 mins. you can't exercise 0 mins sir...",
+                message: "duration needs to be > 0 mins...",
             };
 
         this.sessions[newSession.date] = newSession;
         this.updateData();
         return { success: true };
+    }
+    addActiveSession() {
+        const result = this.addSession(this.activeSession);
+        this.activeSession = DEFAULT_SESSION;
+        return result;
     }
 
     applyRoutine(session: Session): Session {
@@ -70,6 +75,17 @@ class SessionManager {
             (acc, curr: Session) => acc + curr.duration,
             0,
         );
+    }
+
+    // for summary
+    getSetCount() {
+        return this.activeSession.exercises.reduce(
+            (acc, curr) => acc + (curr.sets ?? 0),
+            0,
+        );
+    }
+    getExerciseCount() {
+        return this.activeSession.exercises.length;
     }
 }
 

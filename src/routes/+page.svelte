@@ -74,7 +74,7 @@
 </section>
 
 <hr />
-<section class="space-y-5">
+<section>
     {@render toggleHeading(
         "All Sessions",
         showSections.sessions,
@@ -114,7 +114,7 @@
     {/if}
 </section>
 
-<section class="space-y-5">
+<section>
     {@render toggleHeading(
         "Routines",
         showSections.routines,
