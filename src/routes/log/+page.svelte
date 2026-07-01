@@ -16,21 +16,8 @@
 
     let newSession = $state<Session>(DEFAULT_SESSION);
 
-    const routinesOption = $derived([
-        { value: "custom", label: "Custom" },
-        ...routineManager.routines.map((r) => ({
-            value: r.id,
-            label: r.name,
-        })),
-    ]);
-
     $effect(() => {
-        if (newSession.routineId != "custom") {
-            const routine = routineManager.getById(newSession.routineId);
-            newSession.exercises = [...routine.exercises];
-        } else {
-            newSession.exercises = [];
-        }
+        sessionManager.applyRoutine(newSession);
     });
 </script>
 
@@ -75,7 +62,7 @@
             <Label class="shrink-0">Routine</Label>
             <Combobox
                 noun="routine"
-                options={routinesOption}
+                options={routineManager.options}
                 bind:value={newSession.routineId}
             />
         </div>

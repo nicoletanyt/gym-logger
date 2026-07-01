@@ -14,6 +14,8 @@
         type Session,
     } from "$lib/Session.svelte";
     import type { Result } from "$lib/constants";
+    import Combobox from "$lib/components/ui/combobox/combobox.svelte";
+    import { routineManager } from "$lib/Routine.svelte";
 
     let newSession = $state<Session>(DEFAULT_SESSION);
     let isOngoing = $state(false);
@@ -95,6 +97,10 @@
         const diff = endTime.getTime() - startTime.getTime();
         return Math.floor(diff / 1000);
     }
+
+    $effect(() => {
+        sessionManager.applyRoutine(newSession);
+    });
 </script>
 
 <header class="space-y-5 mb-10">
@@ -104,7 +110,7 @@
     <h1>New Session</h1>
 </header>
 
-<section>
+<section class="space-y-3">
     {#if isOngoing}
         <p>
             Date: <span class="font-bold">
@@ -119,6 +125,14 @@
                 type="date"
                 class="w-1/2"
                 bind:value={newSession.date}
+            />
+        </div>
+        <div class="flex justify-between">
+            <Label class="shrink-0">Routine</Label>
+            <Combobox
+                noun="routine"
+                options={routineManager.options}
+                bind:value={newSession.routineId}
             />
         </div>
     {/if}

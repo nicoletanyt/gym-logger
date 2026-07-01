@@ -50,7 +50,7 @@
         >Log Session</Button
     >
     <Button variant="default" class="w-1/2 m-auto" href="/sessions/new"
-        >New Session</Button
+        >Start Session</Button
     >
 </section>
 

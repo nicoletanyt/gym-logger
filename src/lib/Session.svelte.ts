@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from "uuid";
 import { STORAGE_KEYS, type Result } from "./constants";
 import type { Exercise } from "./types";
+import { routineManager } from "./Routine.svelte";
 
 export interface Session {
     id: string;
@@ -48,6 +49,16 @@ class SessionManager {
         this.sessions[newSession.date] = newSession;
         this.updateData();
         return { success: true };
+    }
+
+    applyRoutine(session: Session): Session {
+        if (session.routineId != "custom") {
+            const routine = routineManager.getById(session.routineId);
+            session.exercises = [...routine.exercises];
+        } else {
+            session.exercises = [];
+        }
+        return session;
     }
 
     // for stats

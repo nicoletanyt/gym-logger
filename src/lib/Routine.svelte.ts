@@ -16,6 +16,13 @@ export const DEFAULT_ROUTINE: Routine = {
 
 class RoutineManager {
     routines = $state<Routine[]>([]);
+    options = $derived([
+        { value: "custom", label: "Custom" },
+        ...this.routines.map((r) => ({
+            value: r.id,
+            label: r.name,
+        })),
+    ]);
 
     loadData() {
         this.routines = JSON.parse(
