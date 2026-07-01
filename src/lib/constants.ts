@@ -45,7 +45,7 @@ export function getLevel(effort: number): number {
 
 export function formatDuration(seconds: number) {
     if (seconds < 60) {
-        return `${seconds}s`;
+        return `${Math.floor(seconds)}s`;
     }
     let mins = Math.floor(seconds / 60);
     const secs = seconds % 60;

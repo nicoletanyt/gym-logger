@@ -5,6 +5,7 @@
     import * as Card from "$lib/components/ui/card/index.js";
     import { cubicInOut } from "svelte/easing";
     import ChartContainer from "../ui/chart/chart-container.svelte";
+    import { formatDuration } from "$lib/constants";
 
     type Props = {
         title?: string;
@@ -24,13 +25,9 @@
         y,
     }: Props = $props();
 
-    console.log(chartData);
-
     const chartConfig = {
-        [key]: { label, color: "var(--chart-1)" },
+        [key]: { label, color: "var(--chart-2)" },
     } satisfies Chart.ChartConfig;
-
-    console.log(chartConfig);
 </script>
 
 <Card.Root>
@@ -41,10 +38,15 @@
     <Card.Content>
         <Chart.Container config={chartConfig}>
             <BarChart
+                height={120}
+                labels={{ offset: 12 }}
                 data={chartData}
                 orientation="horizontal"
                 yScale={scaleBand().padding(0.25)}
                 {y}
+                axis="y"
+                rule={false}
+                grid={false}
                 series={[
                     {
                         key,
@@ -52,17 +54,11 @@
                         color: chartConfig[key].color,
                     },
                 ]}
-                padding={{ left: 20 }}
-                grid={false}
-                rule={false}
-                axis="y"
+                padding={{ right: 50 }}
                 props={{
                     bars: {
                         stroke: "none",
                         radius: 5,
-                        insets: {
-                            left: 24,
-                        },
                         rounded: "all",
                         motion: {
                             type: "tween",
@@ -71,11 +67,33 @@
                         },
                     },
                     highlight: { area: { fill: "none" } },
-                    // yAxis: { format: (d) => d.slice(0, 3) },
+                    yAxis: {
+                        tickLabelProps: {
+                            textAnchor: "start",
+                            dx: 6,
+                            class: "stroke-none fill-background!",
+                        },
+                        tickLength: 0,
+                    },
+                    labels: {
+                        format: (value) => formatDuration(value),
+                    },
                 }}
             >
                 {#snippet tooltip()}
-                    <Chart.Tooltip hideLabel />
+                    <Chart.Tooltip hideLabel>
+                        {#snippet formatter({ value, name })}
+                            <div
+                                class="flex w-full items-center text-center justify-between gap-1"
+                            >
+                                <span
+                                    >{name}: {formatDuration(
+                                        value as number,
+                                    )}</span
+                                >
+                            </div>
+                        {/snippet}
+                    </Chart.Tooltip>
                 {/snippet}
             </BarChart>
         </Chart.Container>
