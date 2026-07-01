@@ -281,24 +281,20 @@
             {#if exercises.length > 0}
                 <Button
                     variant="outline"
-                    class="mr-auto"
                     onclick={() => {
                         mode = InputMode.EditTable;
                     }}
                 >
                     <Pencil />
-                    Edit Exercises
                 </Button>
             {/if}
             <Button
                 variant="secondary"
-                class="ml-auto"
                 onclick={() => {
                     mode = InputMode.New;
                 }}
             >
                 <Plus />
-                Add Exercise
             </Button>
         {/if}
     </div>

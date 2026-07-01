@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { Trash2 } from "@lucide/svelte";
+    import { Check, Pencil, Trash2 } from "@lucide/svelte";
     import { page } from "$app/state";
     import Button from "$lib/components/ui/button/button.svelte";
     import * as Card from "$lib/components/ui/card/index.js";
@@ -8,10 +8,11 @@
     import { goto } from "$app/navigation";
     import BackBtn from "$lib/components/BackBtn.svelte";
     import { routineManager } from "$lib/Routine.svelte";
+    import Input from "$lib/components/ui/input/input.svelte";
 
     const id = page.params.id ?? "";
-
-    const routine = $state(routineManager.getById(id));
+    const routine = $state($state.snapshot(routineManager.getById(id)!));
+    let isEdit = $state(false);
 
     function deleteRoutine() {
         routineManager.deleteRoutine(id);
@@ -27,13 +28,31 @@
 <header class="space-y-5 mb-10">
     <div class="flex justify-between">
         <BackBtn />
-        <ConfirmDialog onconfirm={deleteRoutine}>
-            {#snippet trigger()}
-                <Trash2 />
-            {/snippet}
-        </ConfirmDialog>
+        <div class="space-x-3">
+            <ConfirmDialog onconfirm={deleteRoutine}>
+                {#snippet trigger()}
+                    <Trash2 />
+                {/snippet}
+            </ConfirmDialog>
+            <Button
+                variant={"outline"}
+                onclick={() => {
+                    isEdit = !isEdit;
+                }}
+            >
+                {#if isEdit}
+                    <Check />
+                {:else}
+                    <Pencil />
+                {/if}
+            </Button>
+        </div>
     </div>
-    <h1>{routine.name}</h1>
+    {#if isEdit}
+        <Input bind:value={routine.name} class="text-3xl py-5 px-2 font-bold" />
+    {:else}
+        <h1>{routine.name}</h1>
+    {/if}
 </header>
 
 <ExerciseManager bind:exercises={routine.exercises} />
