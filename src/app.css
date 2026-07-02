@@ -131,7 +131,7 @@
     @apply my-10 grid space-y-5;
   }
   header {
-    @apply space-y-5 mb-10;
+    @apply space-y-5 mt-4 mb-8;
   }
 
   html {

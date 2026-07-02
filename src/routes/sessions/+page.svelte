@@ -5,7 +5,6 @@
 </script>
 
 <header>
-    <BackBtn />
     <h1>Sessions</h1>
 </header>
 

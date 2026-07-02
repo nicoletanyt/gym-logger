@@ -4,6 +4,7 @@
     import "../app.css";
     import { sessionManager } from "$lib/Session.svelte";
     import { routineManager } from "$lib/Routine.svelte";
+    import NavBar from "$lib/components/NavBar.svelte";
 
     let { children } = $props();
 
@@ -18,4 +19,9 @@
     <link rel="icon" href={favicon} />
 </svelte:head>
 
-{@render children()}
+<div>
+    <main>
+        {@render children()}
+    </main>
+    <NavBar />
+</div>

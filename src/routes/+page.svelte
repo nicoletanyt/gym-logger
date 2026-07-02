@@ -32,7 +32,7 @@
 {/snippet}
 
 <header>
-    <h1 class="text-center">Gym Logger</h1>
+    <h1>Gym Logger</h1>
 </header>
 
 <section>
