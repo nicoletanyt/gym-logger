@@ -31,7 +31,7 @@
 {/snippet}
 
 <div
-    class="fixed bottom-0 left-0 right-0 flex justify-between bg-background px-10 py-5"
+    class="fixed bottom-0 left-0 right-0 flex justify-between bg-background px-10 py-5 shadow-2xl"
 >
     {#each items as item}
         {@render Item(item)}

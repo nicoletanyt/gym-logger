@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from "uuid";
 export const STORAGE_KEYS: Record<string, string> = {
     sessions: "SESSIONS_STORED",
     routines: "ROUTINES_STORED",
+    exercises: "EXERCISES_STORED",
 };
 
 export const INTENSITY_MAP: Record<number, string> = {
