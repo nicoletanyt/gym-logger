@@ -1,5 +1,6 @@
 import { Dumbbell, Repeat, Timer, SportShoe } from "@lucide/svelte";
 import { STORAGE_KEYS } from "./constants";
+import { v4 as uuidv4 } from "uuid";
 
 interface ExerciseMetric {
     sets: number;
@@ -85,6 +86,15 @@ class ExerciseManager {
             STORAGE_KEYS.exercises,
             JSON.stringify(this.exercises),
         );
+    }
+
+    createDefaultExercise(): Exercise {
+        return {
+            id: uuidv4(),
+            name: "",
+            imageLink: "",
+            metricType: "weight",
+        };
     }
 
     getById(id: string): Exercise {
