@@ -16,24 +16,10 @@
     import Label from "$lib/components/ui/label/label.svelte";
     import Input from "$lib/components/ui/input/input.svelte";
     import Combobox from "$lib/components/ui/combobox/combobox.svelte";
+    import ActionButton from "$lib/components/ActionButton.svelte";
 
     let newExercise = $state<Exercise>(exerciseManager.createDefaultExercise());
-
-    onMount(() => {
-        exerciseManager.exercises = [
-            {
-                id: uuidv4(),
-                name: "Bicep Curls",
-                metricType: "weight",
-            },
-            {
-                id: uuidv4(),
-                name: "Crunches",
-                metricType: "reps",
-            },
-        ];
-        exerciseManager.updateData();
-    });
+    let showAdd = $state(false);
 </script>
 
 <header>
@@ -47,26 +33,30 @@
     {/each}
 </section>
 
+<Button
+    class={cn(
+        buttonVariants({ variant: "default", size: "icon-lg" }),
+        "absolute bottom-5 right-0",
+    )}
+    onclick={() => {
+        showAdd = true;
+    }}
+>
+    <Plus />
+</Button>
+
 <!-- TODO: -->
-<Sheet.Root>
+<Sheet.Root open={showAdd}>
     <!-- Add Buttton -->
-    <Sheet.Trigger
-        class={cn(
-            buttonVariants({ variant: "default", size: "icon-lg" }),
-            "absolute bottom-5 right-0",
-        )}
-    >
-        <Plus />
-    </Sheet.Trigger>
-    <Sheet.Content side="bottom" class="min-h-[600px]">
+    <Sheet.Content side="bottom" class="min-h-150 p-4">
         <Sheet.Header>
             <Sheet.Title>Create New Exercise</Sheet.Title>
             <Sheet.Description>new exercises woohoo!</Sheet.Description>
         </Sheet.Header>
-        <div class="p-4">
+        <section class="px-4 my-0">
             <div class="flex justify-between gap-6">
                 <Label class="shrink-0">Exercise Name</Label>
-                <Input />
+                <Input bind:value={newExercise.name} />
             </div>
             <div class="flex justify-between gap-6">
                 <Label class="shrink-0">Exercise Type</Label>
@@ -83,8 +73,18 @@
             </div>
             <div class="flex justify-between gap-6">
                 <Label class="shrink-0">Image Link</Label>
-                <Input />
+                <Input bind:value={newExercise.imageLink} />
             </div>
-        </div>
+        </section>
+
+        <ActionButton
+            text="Add Exercise"
+            className="p-8"
+            onclick={() => {
+                exerciseManager.addExercise(newExercise);
+                exerciseManager.updateData();
+                showAdd = false;
+            }}
+        />
     </Sheet.Content>
 </Sheet.Root>

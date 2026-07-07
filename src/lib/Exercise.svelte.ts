@@ -100,7 +100,10 @@ class ExerciseManager {
     getById(id: string): Exercise {
         return this.exercises.find((e) => e.id == id)!;
     }
-    addExercise() { }
+    addExercise(newExercise: Exercise) {
+        // TODO: validation (for img)
+        this.exercises.push(newExercise);
+    }
 }
 
 export const exerciseManager = new ExerciseManager();

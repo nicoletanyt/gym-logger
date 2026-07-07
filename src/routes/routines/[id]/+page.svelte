@@ -9,6 +9,7 @@
     import BackBtn from "$lib/components/BackBtn.svelte";
     import { routineManager } from "$lib/Routine.svelte";
     import Input from "$lib/components/ui/input/input.svelte";
+    import ActionButton from "$lib/components/ActionButton.svelte";
 
     const id = page.params.id ?? "";
     const routine = $state($state.snapshot(routineManager.getById(id)!));
@@ -71,8 +72,4 @@
 <!--     </Card.Root> -->
 <!-- </section> -->
 
-<section class="fixed w-full left-0 bottom-0 px-10">
-    <Button variant="secondary" class="bg-green-300" onclick={updateRoutine}>
-        Save Routine
-    </Button>
-</section>
+<ActionButton text="Save Routine" onclick={updateRoutine} />

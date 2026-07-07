@@ -13,6 +13,7 @@
         sessionManager,
     } from "$lib/Session.svelte";
     import { routineManager } from "$lib/Routine.svelte";
+    import ActionButton from "$lib/components/ActionButton.svelte";
 
     let newSession = $state<Session>(DEFAULT_SESSION);
 
@@ -75,18 +76,12 @@
     </section>
 </form>
 
-<section class="fixed w-full left-0 bottom-0 px-10">
-    <Button
-        variant="secondary"
-        class="bg-green-300"
-        onclick={() => {
-            const result = sessionManager.addSession(newSession);
+<ActionButton
+    text="Add Session"
+    onclick={() => {
+        const result = sessionManager.addSession(newSession);
 
-            alert(result.success ? "Session Added!" : result.message);
-            if (result.success) goto("/");
-        }}
-    >
-        <Plus />
-        Add Session
-    </Button>
-</section>
+        alert(result.success ? "Session Added!" : result.message);
+        if (result.success) goto("/");
+    }}
+/>

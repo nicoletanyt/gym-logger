@@ -178,7 +178,7 @@
     </section>
 {/if}
 
-<section class="fixed w-full left-0 bottom-0 px-10">
+<section class="absolute w-full left-0 bottom-0 px-10 my-5">
     {#if isOngoing}
         <p class="mx-auto">
             Elapsed:

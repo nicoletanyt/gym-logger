@@ -11,6 +11,7 @@
         routineManager,
         type Routine,
     } from "$lib/Routine.svelte";
+    import ActionButton from "$lib/components/ActionButton.svelte";
 
     let newRoutine = $state<Routine>(DEFAULT_ROUTINE);
 </script>
@@ -33,18 +34,14 @@
     </section>
 </form>
 
-<section class="fixed w-full left-0 bottom-0 px-10">
-    <Button
-        variant="secondary"
-        class="bg-green-300"
-        onclick={() => {
-            const result = routineManager.addRoutine(newRoutine);
+<section></section>
+<ActionButton
+    text="Add Routine"
+    className="px-10"
+    onclick={() => {
+        const result = routineManager.addRoutine(newRoutine);
 
-            alert(result.success ? "Routine Added!" : result.message);
-            if (result.success) goto("/");
-        }}
-    >
-        <Plus />
-        Add Routine
-    </Button>
-</section>
+        alert(result.success ? "Routine Added!" : result.message);
+        if (result.success) goto("/");
+    }}
+/>
