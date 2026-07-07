@@ -1,295 +1,140 @@
 <script lang="ts">
-    import { Plus, Check, X, Trash2, Pencil } from "@lucide/svelte";
-    import { v4 as uuidv4 } from "uuid";
-    import * as Table from "$lib/components/ui/table/index.js";
-    import * as Dialog from "$lib/components/ui/dialog/index.js";
-    import { Label } from "$lib/components/ui/label/index.js";
-    import { Button, buttonVariants } from "$lib/components/ui/button/index.js";
-    import { Input } from "$lib/components/ui/input/index.js";
-    import { InputMode, RowType, type Exercise, type Group } from "$lib/types";
-    import { DEFAULT_EXERCISE, DEFAULT_GROUP } from "$lib/constants";
-    import Checkbox from "./ui/checkbox/checkbox.svelte";
+    import * as Sheet from "$lib/components/ui/sheet/index.js";
+    import * as Card from "$lib/components/ui/card/index.js";
+    import { DEFAULT_EXERCISE } from "$lib/constants";
+    import Combobox from "$lib/components/ui/combobox/combobox.svelte";
+    import {
+        exerciseManager,
+        METRICS,
+        type Exercise,
+        type ExerciseEntry,
+        type ExerciseMetric,
+        type MetricType,
+    } from "$lib/Exercise.svelte";
+    import { Plus } from "@lucide/svelte";
+    import ExerciseCard from "./ExerciseCard.svelte";
+    import MetricTypeTag from "./MetricTypeTag.svelte";
+    import Button from "./ui/button/button.svelte";
+    import ActionButton from "./ActionButton.svelte";
+    import Label from "./ui/label/label.svelte";
+    import Input from "./ui/input/input.svelte";
 
-    let { exercises = $bindable<Exercise[]>(), canEdit = true } = $props();
-    let groups = $state<Group[]>([]);
-
-    let newExerciseData = $state<Exercise>(DEFAULT_EXERCISE);
-    let newGroup = $state<Group>(DEFAULT_GROUP);
-
-    let mode = $state<InputMode>(InputMode.None);
-    let selectedRows = $state<string[]>([]);
-
-    let isEditRowIndex = $state("");
-
-    let rows = $derived([
-        ...groups.flatMap((group) => [
-            { type: RowType.GroupHeading, data: group },
-            ...exercises
-                .filter((e: Exercise) => e.groupId == group.id)
-                .map((e: Exercise) => ({
-                    type: RowType.ExerciseItem,
-                    data: e,
-                })),
-        ]),
-        ...exercises
-            .filter((e: Exercise) => !e.groupId)
-            .map((e: Exercise) => ({
-                type: RowType.ExerciseItem,
-                data: e,
-            })),
-    ]);
-
-    function addExercise() {
-        newExerciseData.id = uuidv4();
-        exercises.push({ ...newExerciseData });
-        newExerciseData = DEFAULT_EXERCISE;
-    }
-
-    function selectRow(index: string) {
-        if (selectedRows.includes(index)) {
-            selectedRows.splice(selectedRows.indexOf(index), 1);
-        } else selectedRows.push(index);
-    }
-
-    function getSelectedExericses() {
-        let ex: String[] = [];
-        selectedRows.forEach((id) => {
-            const e = exercises.find((e: Exercise) => e.id == id);
-            ex.push(e.name);
-        });
-        return ex.join(", ");
-    }
-
-    function createGroup() {
-        newGroup.id = uuidv4();
-        selectedRows.forEach((index) => {
-            const e = exercises.find((e: Exercise) => e.id == index);
-            e.sets = newGroup.sets;
-            e.groupId = newGroup.id;
-        });
-        selectedRows = [];
-        groups.push(newGroup);
-        newGroup = DEFAULT_GROUP;
-    }
-
-    function deleteExercises() {
-        exercises = exercises.filter(
-            (e: Exercise) => !selectedRows.includes(e.id),
-        );
-        selectedRows = [];
-
-        groups = groups.filter((g: Group) =>
-            exercises.some((e: Exercise) => e.groupId == g.id),
-        );
-    }
-
-    $effect(() => {
-        if (mode == InputMode.None) {
-            selectedRows = [];
-            isEditRowIndex = "";
-        }
+    const exercises: ExerciseEntry[] = [
+        {
+            exerciseId: "c2a21666-a5a6-4ee0-b8cb-28bb39f075e3",
+            metric: {
+                type: "weight",
+                sets: 3,
+                weight: 11,
+                reps: 15,
+            },
+        },
+    ];
+    let metricType = $state<MetricType>("weight");
+    let metric = $state<ExerciseMetric>({
+        type: "weight",
+        sets: 3,
+        weight: 11,
+        reps: 15,
     });
+    let newEntry = $state<ExerciseEntry>({
+        exerciseId: "",
+        metric: metric,
+    });
+
+    let showAdd = $state(false);
 </script>
 
-<Table.Root>
-    <Table.Header>
-        <Table.Row>
-            {#if mode == InputMode.EditTable}
-                <Table.Head class="w-7"></Table.Head>
-            {/if}
-            <Table.Head>Exercise</Table.Head>
-            <Table.Head class="w-1/4 text-center">Sets</Table.Head>
-            <Table.Head class="w-1/4 text-center">Reps</Table.Head>
-        </Table.Row>
-    </Table.Header>
-    <Table.Body>
-        {#each rows as { type, data: item }}
-            {#if type == RowType.GroupHeading}
-                <Table.Row>
-                    {#if mode == InputMode.EditTable}
-                        <Table.Cell class="w-7"></Table.Cell>
-                    {/if}
-                    <Table.Cell class="font-bold">{item.name}</Table.Cell>
-                    <Table.Cell class="text-center">{item.sets}</Table.Cell>
-                    <Table.Cell class="text-center"></Table.Cell>
-                </Table.Row>
-            {:else}
-                <Table.Row
-                    onclick={() => selectRow(item.id)}
-                    class={item.groupId ? "bg-muted/50" : ""}
-                >
-                    {#if mode == InputMode.EditTable}
-                        <Table.Cell class="w-7">
-                            <Checkbox
-                                checked={selectedRows.includes(item.id)}
-                            />
-                        </Table.Cell>
-                    {/if}
-                    <Table.Cell
-                        class={item.groupId && mode == InputMode.None
-                            ? "pl-5"
-                            : ""}
-                    >
-                        {#if isEditRowIndex == item.id}
-                            <Input
-                                autofocus
-                                bind:value={item.name}
-                                onclick={(e) => e.stopPropagation()}
-                            />
-                        {:else}
-                            {item.name}
-                        {/if}
-                    </Table.Cell>
-                    <Table.Cell class="text-center">
-                        {#if isEditRowIndex == item.id}
-                            <Input
-                                bind:value={item.sets}
-                                onclick={(e) => e.stopPropagation()}
-                            />
-                        {:else if !item.groupId}
-                            {item.sets}
-                        {/if}
-                    </Table.Cell>
-                    <Table.Cell class="text-center">
-                        {#if isEditRowIndex == item.id}
-                            <Input
-                                bind:value={item.reps}
-                                onclick={(e) => e.stopPropagation()}
-                            />
-                        {:else}
-                            {item.reps}
-                        {/if}
-                    </Table.Cell>
-                </Table.Row>
-            {/if}
-        {/each}
-        {#if mode == InputMode.New}
-            <Table.Row>
-                <Table.Cell>
-                    <Input bind:value={newExerciseData.name} />
-                </Table.Cell>
-                <Table.Cell class="text-center">
-                    <Input type="number" bind:value={newExerciseData.sets} />
-                </Table.Cell>
-                <Table.Cell class="text-center">
-                    <Input type="number" bind:value={newExerciseData.reps} />
-                </Table.Cell>
-            </Table.Row>
-        {/if}
-    </Table.Body>
-</Table.Root>
+<div class="grid gap-3">
+    {#each exercises as e}
+        {@const exercise = exerciseManager.getById(e.exerciseId)}
+        <Card.Root onclick={() => {}}>
+            <Card.Content class="flex justify-between items-center">
+                <div class="space-y-2">
+                    <p class="font-bold">{exercise.name}</p>
+                    <div class="flex gap-2 items-center">
+                        <p>1 Set</p>
+                        <span class="size-1 rounded-full bg-muted-foreground"
+                        ></span>
+                        <p>10 Reps</p>
+                    </div>
+                </div>
+                <!-- TAG -->
+                <MetricTypeTag
+                    metric={METRICS[exercise.metricType]}
+                    size="sm"
+                />
+            </Card.Content>
+        </Card.Root>
+    {/each}
+    <Button
+        variant="secondary"
+        class="w-fit ml-auto"
+        onclick={() => {
+            showAdd = true;
+        }}
+    >
+        <Plus />
+    </Button>
+</div>
 
-{#if canEdit}
-    <div class="flex justify-end gap-2">
-        {#if mode != InputMode.None}
-            {#if mode == InputMode.EditTable}
-                <div class="mr-auto gap-2 flex items-center">
-                    {#if selectedRows.length > 0}
-                        <Button
-                            variant="destructive"
-                            size="icon-sm"
-                            onclick={deleteExercises}><Trash2 /></Button
-                        >
-                    {/if}
-                    {#if selectedRows.length == 1}
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onclick={() => {
-                                mode = InputMode.EditRow;
-                                isEditRowIndex = selectedRows[0];
-                            }}>Edit</Button
-                        >
-                    {:else if selectedRows.length > 1}
-                        <Dialog.Root>
-                            <Dialog.Trigger
-                                class={buttonVariants({
-                                    variant: "outline",
-                                    size: "sm",
-                                })}>Group</Dialog.Trigger
-                            >
-                            <Dialog.Content>
-                                <Dialog.Header>
-                                    <Dialog.Title>Create Group</Dialog.Title>
-                                    <Dialog.Description>
-                                        Selected Exercises:
-                                        <br />
-                                        {getSelectedExericses()}
-                                    </Dialog.Description>
-                                </Dialog.Header>
-                                <div class="space-y-5">
-                                    <div class="flex justify-between">
-                                        <Label class="shrink-0"
-                                            >Group Name</Label
-                                        >
-                                        <Input
-                                            class="w-1/2"
-                                            bind:value={newGroup.name}
-                                        />
-                                    </div>
-                                    <div class="flex justify-between">
-                                        <Label class="shrink-0">Sets</Label>
-                                        <Input
-                                            type="number"
-                                            class="w-1/2"
-                                            bind:value={newGroup.sets}
-                                        />
-                                    </div>
-                                </div>
-                                <Dialog.Footer class="">
-                                    <Dialog.Close
-                                        class={buttonVariants({
-                                            variant: "default",
-                                        })}
-                                        onclick={createGroup}>Add</Dialog.Close
-                                    >
-                                </Dialog.Footer>
-                            </Dialog.Content>
-                        </Dialog.Root>
-                    {/if}
+<Sheet.Root open={showAdd}>
+    <!-- Add Buttton -->
+    <Sheet.Content side="bottom" class="min-h-150 p-4">
+        <Sheet.Header>
+            <Sheet.Title>Add Exercise</Sheet.Title>
+        </Sheet.Header>
+        <section class="px-4 my-0">
+            <div class="flex justify-between">
+                <Label>Exercise</Label>
+                <Combobox
+                    noun="exercise"
+                    options={exerciseManager.exercises.map((m) => {
+                        return {
+                            value: m.id,
+                            label: m.name,
+                        };
+                    })}
+                    bind:value={newEntry.exerciseId}
+                />
+            </div>
+            <div class="flex justify-between">
+                <Label>Exercise Type</Label>
+                <Combobox
+                    noun="type"
+                    options={Object.values(METRICS).map((m) => {
+                        return {
+                            value: m.name.toLowerCase(),
+                            label: m.name,
+                        };
+                    })}
+                    bind:value={metricType}
+                />
+            </div>
+            <div class="flex justify-between">
+                <Label>Sets</Label>
+                <Input type="number" class="w-1/2" />
+            </div>
+            {#if metricType == "weight"}
+                <div class="flex justify-between">
+                    <Label>Weight</Label>
+                    <Input type="number" class="w-1/2" />
+                </div>
+                <div class="flex justify-between">
+                    <Label>Reps</Label>
+                    <Input type="number" class="w-1/2" />
                 </div>
             {/if}
-            <Button
-                variant="destructive"
-                size="icon"
-                onclick={() => {
-                    mode = InputMode.None;
-                }}
-            >
-                <X />
-            </Button>
-            <Button
-                variant="secondary"
-                class="bg-green-300"
-                size="icon"
-                onclick={() => {
-                    if (mode == InputMode.New) {
-                        addExercise();
-                    }
-                    mode = InputMode.None;
-                }}
-            >
-                <Check />
-            </Button>
-        {:else}
-            {#if exercises.length > 0}
-                <Button
-                    variant="outline"
-                    onclick={() => {
-                        mode = InputMode.EditTable;
-                    }}
-                >
-                    <Pencil />
-                </Button>
-            {/if}
-            <Button
-                variant="secondary"
-                onclick={() => {
-                    mode = InputMode.New;
-                }}
-            >
-                <Plus />
-            </Button>
-        {/if}
-    </div>
-{/if}
+        </section>
+
+        <ActionButton
+            text="Add Exercise"
+            className="p-8"
+            onclick={() => {
+                // exerciseManager.addExercise(newExercise);
+                exerciseManager.updateData();
+                showAdd = false;
+            }}
+        />
+    </Sheet.Content>
+</Sheet.Root>

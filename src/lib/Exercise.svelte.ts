@@ -2,7 +2,7 @@ import { Dumbbell, Repeat, Timer, SportShoe } from "@lucide/svelte";
 import { STORAGE_KEYS } from "./constants";
 import { v4 as uuidv4 } from "uuid";
 
-interface ExerciseMetric {
+export interface BaseMetric {
     sets: number;
 }
 
@@ -43,34 +43,36 @@ export interface Exercise {
     metricType: MetricType;
 }
 
-interface ExerciseEntry {
-    exerciseId: string;
-    metric: ExerciseMetric;
-}
-
 // eg weight lifting
-interface Weight extends ExerciseMetric {
+export interface Weight extends BaseMetric {
     type: "weight";
     weight: number;
     reps: number;
 }
 
 // eg crunches
-interface Reps extends ExerciseMetric {
+export interface Reps extends BaseMetric {
     type: "reps";
     reps: number;
 }
 
 // eg planks
-interface Duration extends ExerciseMetric {
+export interface Duration extends BaseMetric {
     type: "duration";
     duration: number;
 }
 
-interface Cardio extends ExerciseMetric {
+export interface Cardio extends BaseMetric {
     type: "cardio";
     duration: number;
     distance: number;
+}
+
+export type ExerciseMetric = Weight | Reps | Duration | Cardio;
+
+export interface ExerciseEntry {
+    exerciseId: string;
+    metric: ExerciseMetric;
 }
 
 class ExerciseManager {

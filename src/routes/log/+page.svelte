@@ -5,7 +5,6 @@
     import { Label } from "$lib/components/ui/label/index.js";
     import { Combobox } from "$lib/components/ui/combobox/";
     import { goto } from "$app/navigation";
-    import ExerciseManager from "$lib/components/ExerciseManager.svelte";
     import BackBtn from "$lib/components/BackBtn.svelte";
     import {
         DEFAULT_SESSION,
@@ -14,6 +13,7 @@
     } from "$lib/Session.svelte";
     import { routineManager } from "$lib/Routine.svelte";
     import ActionButton from "$lib/components/ActionButton.svelte";
+    import ExerciseManager from "$lib/components/ExerciseManager.svelte";
 
     let newSession = $state<Session>(DEFAULT_SESSION);
 
@@ -69,10 +69,9 @@
         </div>
     </section>
 
-    <hr />
-
     <section>
-        <ExerciseManager bind:exercises={newSession.exercises} />
+        <h2>Exercises</h2>
+        <ExerciseManager />
     </section>
 </form>
 
