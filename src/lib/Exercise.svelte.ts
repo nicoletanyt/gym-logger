@@ -99,6 +99,17 @@ class ExerciseManager {
         };
     }
 
+    createExerciseEntry(
+        exerciseId: string,
+        metric: ExerciseMetric,
+    ): ExerciseEntry {
+        // TODO: validation
+        return {
+            exerciseId: exerciseId,
+            metric: metric,
+        };
+    }
+
     getById(id: string): Exercise {
         return this.exercises.find((e) => e.id == id)!;
     }

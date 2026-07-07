@@ -1,13 +1,13 @@
 import { v4 as uuidv4 } from "uuid";
 import { STORAGE_KEYS, type Result } from "./constants";
-import type { Exercise } from "./types";
 import { routineManager } from "./Routine.svelte";
+import type { ExerciseEntry } from "./Exercise.svelte";
 
 export interface Session {
     id: string;
     duration: number;
     effort: number;
-    exercises: Exercise[];
+    exercises: ExerciseEntry[];
     routineId: string;
     date: string;
     startTime?: Date;
@@ -80,7 +80,7 @@ class SessionManager {
     // for summary
     getSetCount() {
         return this.activeSession.exercises.reduce(
-            (acc, curr) => acc + (curr.sets ?? 0),
+            (acc, curr) => acc + (curr.metric.sets ?? 0),
             0,
         );
     }

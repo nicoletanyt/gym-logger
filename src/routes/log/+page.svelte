@@ -71,7 +71,7 @@
 
     <section>
         <h2>Exercises</h2>
-        <ExerciseManager />
+        <ExerciseManager bind:exercises={newSession.exercises} />
     </section>
 </form>
 

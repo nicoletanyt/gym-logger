@@ -9,8 +9,6 @@
         type Exercise,
     } from "$lib/Exercise.svelte";
     import { Plus } from "@lucide/svelte";
-    import { onMount } from "svelte";
-    import { v4 as uuidv4 } from "uuid";
     import * as Sheet from "$lib/components/ui/sheet/index.js";
     import { cn } from "$lib/utils";
     import Label from "$lib/components/ui/label/label.svelte";
