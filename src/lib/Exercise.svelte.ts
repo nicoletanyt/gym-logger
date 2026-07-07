@@ -75,6 +75,14 @@ export interface ExerciseEntry {
     metric: ExerciseMetric;
 }
 
+export const UNITS = {
+    sets: "sets",
+    reps: "reps",
+    weight: "kg",
+    duration: "mins",
+    distance: "km",
+};
+
 class ExerciseManager {
     exercises = $state<Exercise[]>([]);
 

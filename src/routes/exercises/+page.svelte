@@ -49,7 +49,6 @@
     <Sheet.Content side="bottom" class="min-h-150 p-4">
         <Sheet.Header>
             <Sheet.Title>Create New Exercise</Sheet.Title>
-            <Sheet.Description>new exercises woohoo!</Sheet.Description>
         </Sheet.Header>
         <section class="px-4 my-0">
             <div class="flex justify-between gap-6">
@@ -77,7 +76,7 @@
 
         <ActionButton
             text="Add Exercise"
-            className="p-8"
+            onOverlay={true}
             onclick={() => {
                 exerciseManager.addExercise(newExercise);
                 exerciseManager.updateData();

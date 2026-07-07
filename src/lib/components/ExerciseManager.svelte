@@ -5,6 +5,7 @@
     import {
         exerciseManager,
         METRICS,
+        UNITS,
         type ExerciseEntry,
         type ExerciseMetric,
         type MetricType,
@@ -15,38 +16,57 @@
     import ActionButton from "./ActionButton.svelte";
     import Label from "./ui/label/label.svelte";
     import Input from "./ui/input/input.svelte";
+    import Field from "./Field.svelte";
 
-    let { exercises }: { exercises: ExerciseEntry[] } = $props();
-    let metricType = $state<MetricType>("weight");
-    let metric = $state<ExerciseMetric>({
-        type: "weight",
-        sets: 3,
-        weight: 11,
-        reps: 15,
-    });
+    let { exercises = $bindable() }: { exercises: ExerciseEntry[] } = $props();
+    let metric = $state<ExerciseMetric>(createMetric("weight"));
     let exerciseId = $state("");
 
     let showAdd = $state(false);
 
-    $effect(() => {
-        switch (metricType) {
+    function createMetric(type: MetricType): ExerciseMetric {
+        switch (type) {
             case "weight":
-                metric = { type: "weight", sets: 0, weight: 0, reps: 0 };
-                break;
+                return {
+                    type,
+                    sets: 0,
+                    weight: 0,
+                    reps: 0,
+                };
+
             case "reps":
-                metric = { type: "reps", sets: 0, reps: 0 };
-                break;
+                return {
+                    type,
+                    sets: 0,
+                    reps: 0,
+                };
+
             case "duration":
-                metric = { type: "duration", sets: 0, duration: 0 };
-                break;
+                return {
+                    type,
+                    sets: 0,
+                    duration: 0,
+                };
+
             case "cardio":
-                metric = { type: "cardio", sets: 0, duration: 0, distance: 0 };
-                break;
+                return {
+                    type,
+                    sets: 0,
+                    duration: 0,
+                    distance: 0,
+                };
         }
-    });
+    }
+
+    function onExerciseChanged(exerciseId: string) {
+        const exercise = exerciseManager.getById(exerciseId);
+        metric = createMetric(exercise.metricType);
+        console.log("Created");
+        console.log(metric);
+    }
 </script>
 
-<div class="grid gap-3">
+<div class="grid gap-3 overflow-y-auto">
     {#each exercises as e}
         {@const exercise = exerciseManager.getById(e.exerciseId)}
         <Card.Root size={"sm"} onclick={() => {}}>
@@ -56,7 +76,10 @@
                     <div class="flex gap-2 items-center text-xs">
                         {#each Object.entries(e.metric) as [label, value], key}
                             {#if label != "type"}
-                                <p>{value} {label}</p>
+                                <p>
+                                    {value}
+                                    {UNITS[label as keyof typeof UNITS]}
+                                </p>
                                 {#if key != Object.values(e.metric).length - 1}
                                     <span
                                         class="size-1 rounded-full bg-muted-foreground"
@@ -102,8 +125,7 @@
             </Button>
         </Sheet.Header>
         <section class="px-4 my-0">
-            <div class="flex justify-between">
-                <Label>Exercise</Label>
+            <Field label="Exercise">
                 <Combobox
                     noun="exercise"
                     options={exerciseManager.exercises.map((m) => {
@@ -113,83 +135,40 @@
                         };
                     })}
                     bind:value={exerciseId}
+                    onChange={() => onExerciseChanged(exerciseId)}
                 />
-            </div>
-            <div class="flex justify-between">
-                <Label>Exercise Type</Label>
-                <Combobox
-                    noun="type"
-                    options={Object.values(METRICS).map((m) => {
-                        return {
-                            value: m.name.toLowerCase(),
-                            label: m.name,
-                        };
-                    })}
-                    bind:value={metricType}
-                />
-            </div>
-            <div class="flex justify-between">
-                <Label>Sets</Label>
-                <Input type="number" class="w-1/2" bind:value={metric.sets} />
-            </div>
+            </Field>
+            <Field label="Sets">
+                <Input type="number" bind:value={metric.sets} />
+            </Field>
             {#if metric.type == "weight"}
-                <div class="flex justify-between">
-                    <Label>Weight</Label>
-                    <Input
-                        type="number"
-                        class="w-1/2"
-                        bind:value={metric.weight}
-                    />
-                </div>
-                <div class="flex justify-between">
-                    <Label>Reps</Label>
-                    <Input
-                        type="number"
-                        class="w-1/2"
-                        bind:value={metric.reps}
-                    />
-                </div>
+                <Field label="Weight">
+                    <Input type="number" bind:value={metric.weight} />
+                </Field>
+                <Field label="Reps">
+                    <Input type="number" bind:value={metric.reps} />
+                </Field>
             {:else if metric.type == "reps"}
-                <div class="flex justify-between">
-                    <Label>Reps</Label>
-                    <Input
-                        type="number"
-                        class="w-1/2"
-                        bind:value={metric.reps}
-                    />
-                </div>
+                <Field label="Reps">
+                    <Input type="number" bind:value={metric.reps} />
+                </Field>
             {:else if metric.type == "duration"}
-                <div class="flex justify-between">
-                    <Label>Duration</Label>
-                    <Input
-                        type="number"
-                        class="w-1/2"
-                        bind:value={metric.duration}
-                    />
-                </div>
+                <Field label="Duration">
+                    <Input type="number" bind:value={metric.duration} />
+                </Field>
             {:else if metric.type == "cardio"}
-                <div class="flex justify-between">
-                    <Label>Duration</Label>
-                    <Input
-                        type="number"
-                        class="w-1/2"
-                        bind:value={metric.duration}
-                    />
-                </div>
-                <div class="flex justify-between">
-                    <Label>Distance</Label>
-                    <Input
-                        type="number"
-                        class="w-1/2"
-                        bind:value={metric.distance}
-                    />
-                </div>
+                <Field label="Duration">
+                    <Input type="number" bind:value={metric.duration} />
+                </Field>
+                <Field label="Distance">
+                    <Input type="number" bind:value={metric.distance} />
+                </Field>
             {/if}
         </section>
 
         <ActionButton
             text="Add Exercise"
-            className="p-8"
+            onOverlay={true}
             onclick={() => {
                 const newEntry = exerciseManager.createExerciseEntry(
                     exerciseId,
