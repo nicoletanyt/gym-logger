@@ -17,18 +17,17 @@
 
     function deleteRoutine() {
         routineManager.deleteRoutine(id);
-        goto("/");
+        goto("/routines");
     }
 
     function updateRoutine() {
         routineManager.updateRoutine(routine);
-        goto("/");
     }
 </script>
 
 <header>
     <div class="flex justify-between">
-        <BackBtn />
+        <BackBtn dest={"/routines"} />
         <div class="space-x-3">
             <ConfirmDialog onconfirm={deleteRoutine}>
                 {#snippet trigger()}
@@ -39,6 +38,7 @@
                 variant={"outline"}
                 onclick={() => {
                     isEdit = !isEdit;
+                    if (!isEdit) updateRoutine();
                 }}
             >
                 {#if isEdit}
@@ -71,5 +71,3 @@
 <!--         </Card.Content> -->
 <!--     </Card.Root> -->
 <!-- </section> -->
-
-<ActionButton text="Save Routine" onclick={updateRoutine} />

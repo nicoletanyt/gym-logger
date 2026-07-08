@@ -1,18 +1,12 @@
 import { v4 as uuidv4 } from "uuid";
-import type { Exercise } from "./types";
 import { STORAGE_KEYS, type Result } from "./constants";
+import type { ExerciseEntry } from "./Exercise.svelte";
 
 export interface Routine {
     id: string;
     name: string;
-    exercises: Exercise[];
+    exercises: ExerciseEntry[];
 }
-
-export const DEFAULT_ROUTINE: Routine = {
-    id: uuidv4(),
-    name: "New Routine",
-    exercises: [],
-};
 
 class RoutineManager {
     routines = $state<Routine[]>([]);
@@ -35,6 +29,14 @@ class RoutineManager {
 
     getById(id: string): Routine {
         return this.routines.find((r) => r.id == id)!;
+    }
+
+    createDefault() {
+        return {
+            id: uuidv4(),
+            name: "New Routine",
+            exercises: [],
+        };
     }
 
     // TODO:

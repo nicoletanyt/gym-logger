@@ -63,14 +63,14 @@
     }
 </script>
 
-<div class="grid gap-3 overflow-y-auto">
+<div class="grid gap-3">
     {#each exercises as e}
         {@const exercise = exerciseManager.getById(e.exerciseId)}
         <Card.Root size={"sm"} class="mx-px">
             <Card.Content class="flex justify-between items-center">
                 <div class="space-y-2">
                     <p class="font-bold">{exercise.name}</p>
-                    <div class="flex gap-2 items-center text-xs">
+                    <div class="flex gap-2 items-center">
                         <MetricDisplay exercise={e} />
                     </div>
                 </div>

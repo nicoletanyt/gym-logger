@@ -3,7 +3,13 @@
     import Button from "./ui/button/button.svelte";
     import { cn } from "$lib/utils";
 
-    let { text, onclick, onOverlay = false, className = "" } = $props();
+    let {
+        text,
+        onclick,
+        onOverlay = false,
+        className = "",
+        icon = null,
+    } = $props();
 </script>
 
 <section
@@ -14,7 +20,11 @@
     )}
 >
     <Button variant="secondary" class="bg-green-300" {onclick}>
-        <Plus />
+        {#if icon}
+            {@render icon()}
+        {:else}
+            <Plus />
+        {/if}
         {text}
     </Button>
 </section>
