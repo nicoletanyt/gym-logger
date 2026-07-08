@@ -16,7 +16,7 @@
         ref = $bindable(null),
         options = $bindable<Options[]>(),
         noun,
-        onChange = null,
+        onChange = () => {},
         value = $bindable<string>(""),
         class: className = "",
         ...restProps

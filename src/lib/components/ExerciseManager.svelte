@@ -5,7 +5,6 @@
     import {
         exerciseManager,
         METRICS,
-        UNITS,
         type ExerciseEntry,
         type ExerciseMetric,
         type MetricType,
@@ -14,9 +13,9 @@
     import MetricTypeTag from "./MetricTypeTag.svelte";
     import Button from "./ui/button/button.svelte";
     import ActionButton from "./ActionButton.svelte";
-    import Label from "./ui/label/label.svelte";
     import Input from "./ui/input/input.svelte";
     import Field from "./Field.svelte";
+    import MetricDisplay from "./MetricDisplay.svelte";
 
     let { exercises = $bindable() }: { exercises: ExerciseEntry[] } = $props();
     let metric = $state<ExerciseMetric>(createMetric("weight"));
@@ -61,32 +60,18 @@
     function onExerciseChanged(exerciseId: string) {
         const exercise = exerciseManager.getById(exerciseId);
         metric = createMetric(exercise.metricType);
-        console.log("Created");
-        console.log(metric);
     }
 </script>
 
 <div class="grid gap-3 overflow-y-auto">
     {#each exercises as e}
         {@const exercise = exerciseManager.getById(e.exerciseId)}
-        <Card.Root size={"sm"} onclick={() => {}}>
+        <Card.Root size={"sm"} class="mx-px">
             <Card.Content class="flex justify-between items-center">
                 <div class="space-y-2">
                     <p class="font-bold">{exercise.name}</p>
                     <div class="flex gap-2 items-center text-xs">
-                        {#each Object.entries(e.metric) as [label, value], key}
-                            {#if label != "type"}
-                                <p>
-                                    {value}
-                                    {UNITS[label as keyof typeof UNITS]}
-                                </p>
-                                {#if key != Object.values(e.metric).length - 1}
-                                    <span
-                                        class="size-1 rounded-full bg-muted-foreground"
-                                    ></span>
-                                {/if}
-                            {/if}
-                        {/each}
+                        <MetricDisplay exercise={e} />
                     </div>
                 </div>
                 <!-- TAG -->

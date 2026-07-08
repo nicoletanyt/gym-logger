@@ -15,6 +15,7 @@
     import ActionButton from "$lib/components/ActionButton.svelte";
     import ExerciseManager from "$lib/components/ExerciseManager.svelte";
     import Field from "$lib/components/Field.svelte";
+    import StarDisplay from "$lib/components/StarDisplay.svelte";
 
     let newSession = $state<Session>(DEFAULT_SESSION);
 
@@ -38,21 +39,7 @@
         </Field>
         <div class="flex justify-between">
             <Label class="shrink-0">Level of effort</Label>
-            <div class="flex w-1/2 justify-between">
-                {#each Array.from({ length: 5 }, (_, i) => i + 1) as num}
-                    <Button
-                        variant="outline"
-                        size="icon-sm"
-                        onclick={() => {
-                            newSession.effort = num;
-                        }}
-                    >
-                        <Star
-                            fill={num <= newSession.effort ? "primary" : "none"}
-                        />
-                    </Button>
-                {/each}
-            </div>
+            <StarDisplay bind:value={newSession.effort} className={"w-1/2"} />
         </div>
 
         <Field label="Routine">

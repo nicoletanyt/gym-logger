@@ -11,10 +11,10 @@
     import { Plus } from "@lucide/svelte";
     import * as Sheet from "$lib/components/ui/sheet/index.js";
     import { cn } from "$lib/utils";
-    import Label from "$lib/components/ui/label/label.svelte";
     import Input from "$lib/components/ui/input/input.svelte";
     import Combobox from "$lib/components/ui/combobox/combobox.svelte";
     import ActionButton from "$lib/components/ActionButton.svelte";
+    import Field from "$lib/components/Field.svelte";
 
     let newExercise = $state<Exercise>(exerciseManager.createDefaultExercise());
     let showAdd = $state(false);
@@ -51,14 +51,12 @@
             <Sheet.Title>Create New Exercise</Sheet.Title>
         </Sheet.Header>
         <section class="px-4 my-0">
-            <div class="flex justify-between gap-6">
-                <Label class="shrink-0">Exercise Name</Label>
+            <Field label="Name">
                 <Input bind:value={newExercise.name} />
-            </div>
-            <div class="flex justify-between gap-6">
-                <Label class="shrink-0">Exercise Type</Label>
+            </Field>
+            <Field label="Exercise Type">
                 <Combobox
-                    noun="routine"
+                    noun="type"
                     options={Object.values(METRICS).map((m) => {
                         return {
                             value: m.name.toLowerCase(),
@@ -67,11 +65,11 @@
                     })}
                     bind:value={newExercise.metricType}
                 />
-            </div>
-            <div class="flex justify-between gap-6">
-                <Label class="shrink-0">Image Link</Label>
+            </Field>
+
+            <Field label="Image Link">
                 <Input bind:value={newExercise.imageLink} />
-            </div>
+            </Field>
         </section>
 
         <ActionButton

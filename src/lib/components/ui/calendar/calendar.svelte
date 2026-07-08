@@ -6,9 +6,11 @@
     import { isEqualMonth, type DateValue } from "@internationalized/date";
     import type { Snippet } from "svelte";
     import { getLevel, INTENSITY_MAP } from "$lib/constants.js";
-    import * as Dialog from "$lib/components/ui/dialog/index.js";
-    import * as Popover from "$lib/components/ui/popover/index.js";
-    import type { Session } from "$lib/Session.js";
+    // import type { Session } from "$lib/Session.js";
+    import { sessionManager } from "$lib/Session.svelte.js";
+    import { exerciseManager } from "$lib/Exercise.svelte.js";
+    import MetricDisplay from "$lib/components/MetricDisplay.svelte";
+    import DayPopover from "$lib/components/DayPopover.svelte";
 
     let {
         ref = $bindable(null),
@@ -25,7 +27,6 @@
         yearFormat = "numeric",
         day,
         disableDaysOutsideMonth = false,
-        sessionData,
         ...restProps
     }: WithoutChildrenOrChild<CalendarPrimitive.RootProps> & {
         buttonVariant?: ButtonVariant;
@@ -39,7 +40,6 @@
         monthFormat?: CalendarPrimitive.MonthSelectProps["monthFormat"];
         yearFormat?: CalendarPrimitive.YearSelectProps["yearFormat"];
         day?: Snippet<[{ day: DateValue; outsideMonth: boolean }]>;
-        sessionData: Record<string, Session>;
     } = $props();
 
     const monthFormat = $derived.by(() => {
@@ -49,7 +49,9 @@
     });
 
     let selectedDate = $state<string>("");
-    let selectedSession = $derived(sessionData[selectedDate] ?? null);
+    let selectedSession = $derived(
+        sessionManager.sessions[selectedDate] ?? null,
+    );
 </script>
 
 <!--
@@ -120,73 +122,11 @@ get along, so we shut typescript up by casting `value` to `never`.
                                                     ),
                                                 })}
                                             {:else}
-                                                <Popover.Root>
-                                                    <Popover.Trigger>
-                                                        <Calendar.Day
-                                                            class={INTENSITY_MAP[
-                                                                getLevel(
-                                                                    sessionData[
-                                                                        date.toString()
-                                                                    ]?.effort ??
-                                                                        0,
-                                                                )
-                                                            ]}
-                                                            onclick={() => {
-                                                                selectedDate =
-                                                                    date.toString();
-                                                            }}
-                                                        />
-                                                    </Popover.Trigger>
-
-                                                    <Popover.Content>
-                                                        <p
-                                                            class="font-extrabold text-lg"
-                                                        >
-                                                            Sessions on {selectedDate}
-                                                        </p>
-
-                                                        {#if selectedSession}
-                                                            <div
-                                                                class="space-y-1"
-                                                            >
-                                                                <p>
-                                                                    Duration: {selectedSession.duration}
-                                                                </p>
-                                                                <p>
-                                                                    Effort: {selectedSession.effort}
-                                                                </p>
-
-                                                                <div>
-                                                                    <p
-                                                                        class="font-bold"
-                                                                    >
-                                                                        Exercises:
-                                                                    </p>
-                                                                    {#each selectedSession.exercises as exercise}
-                                                                        <p>
-                                                                            {exercise.name}:
-                                                                            {exercise.reps}
-                                                                            reps,
-                                                                            {exercise.sets}
-                                                                            sets
-                                                                        </p>
-                                                                    {:else}
-                                                                        <p>
-                                                                            No
-                                                                            exercise
-                                                                            logged
-                                                                        </p>
-                                                                    {/each}
-                                                                </div>
-                                                            </div>
-                                                        {:else}
-                                                            <p>
-                                                                No sessions
-                                                                logged
-                                                            </p>
-                                                        {/if}
-                                                    </Popover.Content>
-                                                </Popover.Root>
+                                                <DayPopover
+                                                    {date}
+                                                    bind:selectedDate
+                                                    {selectedSession}
+                                                />
                                             {/if}
                                         </Calendar.Cell>
                                     {/each}
