@@ -71,6 +71,7 @@ export interface Cardio extends BaseMetric {
 export type ExerciseMetric = Weight | Reps | Duration | Cardio;
 
 export interface ExerciseEntry {
+    id: string;
     exerciseId: string;
     metric: ExerciseMetric;
 }
@@ -125,19 +126,19 @@ class ExerciseManager {
         return { success: true };
     }
 
-    createExerciseEntry(exerciseId: string, metric: ExerciseMetric): any {
+    createEntry(exerciseId: string, metric: ExerciseMetric): any {
         const result = this.validateEntry(exerciseId, metric);
         if (!result.success) return result;
 
         return {
             success: true,
             data: {
+                id: uuidv4(),
                 exerciseId: exerciseId,
                 metric: metric,
             },
         };
     }
-
     getById(id: string): Exercise {
         return this.exercises.find((e) => e.id == id)!;
     }

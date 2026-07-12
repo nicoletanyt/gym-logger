@@ -2,6 +2,7 @@
     import * as Sheet from "$lib/components/ui/sheet/index.js";
     import * as Card from "$lib/components/ui/card/index.js";
     import Combobox from "$lib/components/ui/combobox/combobox.svelte";
+    import { Checkbox } from "$lib/components/ui/checkbox/index.js";
     import {
         exerciseManager,
         METRICS,
@@ -9,7 +10,7 @@
         type ExerciseMetric,
         type MetricType,
     } from "$lib/Exercise.svelte";
-    import { Plus, XIcon } from "@lucide/svelte";
+    import { Check, Pencil, Plus, Trash, XIcon } from "@lucide/svelte";
     import MetricTypeTag from "./MetricTypeTag.svelte";
     import Button from "./ui/button/button.svelte";
     import ActionButton from "./ActionButton.svelte";
@@ -21,7 +22,22 @@
     let metric = $state<ExerciseMetric>(createMetric("weight"));
     let exerciseId = $state("");
 
+    let selectedRows = $state<string[]>([]);
+
     let showAdd = $state(false);
+    let showEdit = $state(false);
+
+    function deleteItems() {
+        exercises = exercises.filter((e) => !selectedRows.includes(e.id));
+        selectedRows = [];
+    }
+
+    function editItem() {
+        const selected = exercises.find((e) => e.id == selectedRows[0])!;
+        exerciseId = selected.exerciseId;
+        metric = selected.metric;
+        showAdd = true;
+    }
 
     function createMetric(type: MetricType): ExerciseMetric {
         switch (type) {
@@ -61,43 +77,100 @@
         const exercise = exerciseManager.getById(exerciseId);
         metric = createMetric(exercise.metricType);
     }
+
+    $effect(() => {
+        if (!showAdd) {
+            metric = createMetric("weight");
+            exerciseId = "";
+        }
+        if (!showEdit) {
+            selectedRows = [];
+        }
+    });
 </script>
 
 <div class="grid gap-3">
     {#each exercises as e}
         {@const exercise = exerciseManager.getById(e.exerciseId)}
-        <Card.Root size={"sm"} class="mx-px">
-            <Card.Content class="flex justify-between items-center">
-                <div class="space-y-2">
-                    <p class="font-bold">{exercise.name}</p>
-                    <div class="flex gap-2 items-center">
-                        <MetricDisplay exercise={e} />
-                    </div>
-                </div>
-                <!-- TAG -->
-                <MetricTypeTag
-                    metric={METRICS[exercise.metricType]}
-                    size="sm"
+        <div class="flex gap-2 items-center">
+            {#if showEdit}
+                <Checkbox
+                    class="shrink-0 size-5"
+                    checked={selectedRows.includes(e.id)}
+                    onCheckedChange={(checked) => {
+                        if (checked) {
+                            selectedRows = [...selectedRows, e.id];
+                        } else {
+                            selectedRows = selectedRows.filter(
+                                (id) => id != e.id,
+                            );
+                        }
+                    }}
                 />
-            </Card.Content>
-        </Card.Root>
+            {/if}
+            <Card.Root size={"sm"} class="mx-px flex-1">
+                <Card.Content class="flex justify-between items-center">
+                    <div class="space-y-2">
+                        <p class="font-bold">{exercise.name}</p>
+                        <div class="flex gap-2 items-center">
+                            <MetricDisplay exercise={e} />
+                        </div>
+                    </div>
+                    <!-- TAG -->
+                    <MetricTypeTag
+                        metric={METRICS[exercise.metricType]}
+                        size="sm"
+                    />
+                </Card.Content>
+            </Card.Root>
+        </div>
     {/each}
-    <Button
-        variant="secondary"
-        class="w-fit ml-auto"
-        onclick={() => {
-            showAdd = true;
-        }}
-    >
-        <Plus />
-    </Button>
+    <div class="flex justify-between items-center mt-3">
+        <div>
+            {#if showEdit}
+                <Button variant="destructive" onclick={deleteItems}>
+                    <Trash />
+                </Button>
+                {#if selectedRows.length == 1}
+                    <Button variant="secondary" onclick={editItem}>
+                        <Pencil />
+                    </Button>
+                {/if}
+            {/if}
+        </div>
+        <div class="flex gap-3">
+            {#if !showEdit}
+                <Button
+                    variant="secondary"
+                    onclick={() => {
+                        showEdit = true;
+                    }}
+                >
+                    <Pencil />
+                </Button>
+            {/if}
+            <Button
+                variant={showEdit ? "success" : "default"}
+                onclick={() => {
+                    if (showEdit) showEdit = false;
+                    else showAdd = true;
+                }}
+            >
+                {#if showEdit}
+                    <Check />
+                {:else}
+                    <Plus />
+                {/if}
+            </Button>
+        </div>
+    </div>
 </div>
 
 <Sheet.Root bind:open={showAdd}>
     <!-- Add Buttton -->
     <Sheet.Content side="bottom" class="min-h-150 p-4" showCloseButton={false}>
         <Sheet.Header class="flex justify-between items-center">
-            <Sheet.Title>Add Exercise</Sheet.Title>
+            <Sheet.Title>{showEdit ? "Edit" : "Add"} Exercise</Sheet.Title>
             <Button
                 variant="ghost"
                 size="icon-sm"
@@ -152,16 +225,22 @@
         </section>
 
         <ActionButton
-            text="Add Exercise"
+            text={(showEdit ? "Edit" : "Add").concat(" Exercise")}
             onOverlay={true}
             onclick={() => {
-                const result = exerciseManager.createExerciseEntry(
-                    exerciseId,
-                    metric,
-                );
-                if (result.success) exercises.push(result.data);
-                else alert(result.message);
-                showAdd = false;
+                const result = exerciseManager.createEntry(exerciseId, metric);
+                if (result.success) {
+                    if (showEdit) {
+                        const index = exercises.findIndex(
+                            (e) => e.id == selectedRows[0],
+                        );
+                        exercises[index] = result.data;
+                    } else {
+                        exercises.push(result.data);
+                    }
+                    showAdd = false;
+                    showEdit = false;
+                } else alert(result.message);
             }}
         />
     </Sheet.Content>

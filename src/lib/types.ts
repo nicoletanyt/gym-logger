@@ -21,7 +21,6 @@ export enum RowType {
 
 export enum InputMode {
     None,
+    Add,
     New,
-    EditTable,
-    EditRow,
 }
