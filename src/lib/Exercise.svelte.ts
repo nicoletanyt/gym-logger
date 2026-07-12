@@ -1,5 +1,5 @@
 import { Dumbbell, Repeat, Timer, SportShoe } from "@lucide/svelte";
-import { STORAGE_KEYS } from "./constants";
+import { STORAGE_KEYS, type Result } from "./constants";
 import { v4 as uuidv4 } from "uuid";
 
 export interface BaseMetric {
@@ -107,14 +107,34 @@ class ExerciseManager {
         };
     }
 
-    createExerciseEntry(
-        exerciseId: string,
-        metric: ExerciseMetric,
-    ): ExerciseEntry {
-        // TODO: validation
+    validateEntry(exerciseId: string, metric: ExerciseMetric): Result {
+        if (!exerciseId)
+            return { success: false, message: "Exercise is compulsory" };
+        if (metric.sets <= 0)
+            return { success: false, message: "Sets cannot be <= 0" };
+
+        if ("weight" in metric && metric.weight <= 0)
+            return { success: false, message: "Weight cannot be <= 0" };
+        if ("reps" in metric && metric.reps <= 0)
+            return { success: false, message: "Reps cannot be <= 0" };
+        if ("duration" in metric && metric.duration <= 0)
+            return { success: false, message: "Duration cannot be <= 0" };
+        if ("distance" in metric && metric.distance <= 0)
+            return { success: false, message: "Distance cannot be <= 0" };
+
+        return { success: true };
+    }
+
+    createExerciseEntry(exerciseId: string, metric: ExerciseMetric): any {
+        const result = this.validateEntry(exerciseId, metric);
+        if (!result.success) return result;
+
         return {
-            exerciseId: exerciseId,
-            metric: metric,
+            success: true,
+            data: {
+                exerciseId: exerciseId,
+                metric: metric,
+            },
         };
     }
 

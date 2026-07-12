@@ -1,4 +1,4 @@
-import type { Exercise, Group } from "./types";
+import type { Group } from "./types";
 import { v4 as uuidv4 } from "uuid";
 
 export const STORAGE_KEYS: Record<string, string> = {
@@ -25,13 +25,13 @@ export const GIFS: Record<string, string[]> = {
 
 export type Result = { success: true } | { success: false; message: string };
 
-export const DEFAULT_EXERCISE: Exercise = {
-    id: uuidv4(),
-    name: "Example Exercise",
-    sets: 1,
-    reps: 1,
-    avgDuration: 0,
-};
+// export const DEFAULT_EXERCISE: Exercise = {
+//     id: uuidv4(),
+//     name: "Example Exercise",
+//     sets: 1,
+//     reps: 1,
+//     avgDuration: 0,
+// };
 
 export const DEFAULT_GROUP: Group = {
     id: "",

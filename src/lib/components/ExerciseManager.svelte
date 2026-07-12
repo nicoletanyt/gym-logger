@@ -155,11 +155,12 @@
             text="Add Exercise"
             onOverlay={true}
             onclick={() => {
-                const newEntry = exerciseManager.createExerciseEntry(
+                const result = exerciseManager.createExerciseEntry(
                     exerciseId,
                     metric,
                 );
-                exercises.push(newEntry);
+                if (result.success) exercises.push(result.data);
+                else alert(result.message);
                 showAdd = false;
             }}
         />
