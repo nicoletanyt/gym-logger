@@ -16,6 +16,7 @@
         ref = $bindable(null),
         options = $bindable<Options[]>(),
         noun,
+        onChange = () => {},
         value = $bindable<string>(""),
         class: className = "",
         ...restProps
@@ -43,7 +44,7 @@
             <Button
                 {...props}
                 variant="outline"
-                class="w-1/2 justify-between"
+                class="w-full justify-between"
                 role="combobox"
                 aria-expanded={open}
             >
@@ -63,6 +64,7 @@
                             value={option.value}
                             onSelect={() => {
                                 value = option.value;
+                                onChange();
                                 closeAndFocusTrigger();
                             }}
                         >

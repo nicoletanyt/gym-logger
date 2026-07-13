@@ -1,66 +1,73 @@
 <script lang="ts">
-    import { ChevronLeft, Trash2 } from "@lucide/svelte";
+    import { Check, Pencil, Trash2 } from "@lucide/svelte";
     import { page } from "$app/state";
     import Button from "$lib/components/ui/button/button.svelte";
     import * as Card from "$lib/components/ui/card/index.js";
-    import type { Routine } from "$lib/types";
     import ExerciseManager from "$lib/components/ExerciseManager.svelte";
     import ConfirmDialog from "$lib/components/ConfirmDialog.svelte";
     import { goto } from "$app/navigation";
     import BackBtn from "$lib/components/BackBtn.svelte";
+    import { routineManager } from "$lib/Routine.svelte";
+    import Input from "$lib/components/ui/input/input.svelte";
+    import ActionButton from "$lib/components/ActionButton.svelte";
 
     const id = page.params.id ?? "";
-
-    const routinesData = $derived(
-        JSON.parse(localStorage.getItem("ROUTINES_STORED") ?? "{}"),
-    );
-
-    const routine = $derived<Routine>(routinesData[id]);
-
-    let newRoutine = $derived(routine.exercises);
+    const routine = $state($state.snapshot(routineManager.getById(id)!));
+    let isEdit = $state(false);
 
     function deleteRoutine() {
-        delete routinesData[id];
-        localStorage.setItem("ROUTINES_STORED", JSON.stringify(routinesData));
-        goto("/");
+        routineManager.deleteRoutine(id);
+        goto("/routines");
     }
 
-    function saveRoutine() {
-        routinesData[id].exercises = newRoutine;
-        localStorage.setItem("ROUTINES_STORED", JSON.stringify(routinesData));
-        goto("/");
+    function updateRoutine() {
+        routineManager.updateRoutine(routine);
     }
 </script>
 
-<header class="space-y-5 mb-10">
+<header>
     <div class="flex justify-between">
-        <BackBtn />
-        <ConfirmDialog onconfirm={deleteRoutine}>
-            {#snippet trigger()}
-                <Trash2 />
-            {/snippet}
-        </ConfirmDialog>
+        <BackBtn dest={"/routines"} />
+        <div class="space-x-3">
+            <ConfirmDialog onconfirm={deleteRoutine}>
+                {#snippet trigger()}
+                    <Trash2 />
+                {/snippet}
+            </ConfirmDialog>
+            <Button
+                variant={"outline"}
+                onclick={() => {
+                    isEdit = !isEdit;
+                    if (!isEdit) updateRoutine();
+                }}
+            >
+                {#if isEdit}
+                    <Check />
+                {:else}
+                    <Pencil />
+                {/if}
+            </Button>
+        </div>
     </div>
-    <h1>{routine.name}</h1>
+    {#if isEdit}
+        <Input bind:value={routine.name} class="text-3xl py-5 px-2 font-bold" />
+    {:else}
+        <h1>{routine.name}</h1>
+    {/if}
 </header>
 
-<section class="space-y-5">
-    <ExerciseManager bind:exercises={newRoutine} />
+<section>
+    <ExerciseManager bind:exercises={routine.exercises} />
 </section>
 
-<section>
-    <Card.Root size="sm">
-        <Card.Header>
-            <Card.Title>Total Sessions</Card.Title>
-        </Card.Header>
-        <Card.Content>
-            <p></p>
-        </Card.Content>
-    </Card.Root>
-</section>
-
-<section>
-    <Button variant="secondary" class="bg-green-300" onclick={saveRoutine}>
-        Save Routine
-    </Button>
-</section>
+<!-- TODO: -->
+<!-- <section> -->
+<!--     <Card.Root size="sm"> -->
+<!--         <Card.Header> -->
+<!--             <Card.Title>Total Sessions</Card.Title> -->
+<!--         </Card.Header> -->
+<!--         <Card.Content> -->
+<!--             <p></p> -->
+<!--         </Card.Content> -->
+<!--     </Card.Root> -->
+<!-- </section> -->

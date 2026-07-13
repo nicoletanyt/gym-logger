@@ -1,19 +1,26 @@
-export interface Exercise {
-    name: string;
-    sets: number;
-    reps: number;
-}
+import type { Exercise } from "./Exercise.svelte";
 
-export interface Session {
-    duration: number;
-    effort: number;
-    exercises: Exercise[];
-    templateId: string;
-    date: string;
-}
-
-export interface Routine {
+export interface Group {
     id: string;
     name: string;
-    exercises: Exercise[];
+    sets: number;
+}
+
+export interface ActiveExercise {
+    exercise: Exercise;
+    currentSet: number;
+    durations: number[];
+    prevStart: Date;
+}
+
+// ENUMS
+export enum RowType {
+    GroupHeading,
+    ExerciseItem,
+}
+
+export enum InputMode {
+    None,
+    Add,
+    New,
 }
