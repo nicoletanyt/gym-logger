@@ -9,6 +9,7 @@
     import BackBtn from "$lib/components/BackBtn.svelte";
     import { routineManager } from "$lib/Routine.svelte";
     import Input from "$lib/components/ui/input/input.svelte";
+    import ActionButton from "$lib/components/ActionButton.svelte";
 
     const id = page.params.id ?? "";
     const routine = $state($state.snapshot(routineManager.getById(id)!));
@@ -16,18 +17,17 @@
 
     function deleteRoutine() {
         routineManager.deleteRoutine(id);
-        goto("/");
+        goto("/routines");
     }
 
     function updateRoutine() {
         routineManager.updateRoutine(routine);
-        goto("/");
     }
 </script>
 
 <header>
     <div class="flex justify-between">
-        <BackBtn />
+        <BackBtn dest={"/routines"} />
         <div class="space-x-3">
             <ConfirmDialog onconfirm={deleteRoutine}>
                 {#snippet trigger()}
@@ -38,6 +38,7 @@
                 variant={"outline"}
                 onclick={() => {
                     isEdit = !isEdit;
+                    if (!isEdit) updateRoutine();
                 }}
             >
                 {#if isEdit}
@@ -70,9 +71,3 @@
 <!--         </Card.Content> -->
 <!--     </Card.Root> -->
 <!-- </section> -->
-
-<section class="fixed w-full left-0 bottom-0 px-10">
-    <Button variant="secondary" class="bg-green-300" onclick={updateRoutine}>
-        Save Routine
-    </Button>
-</section>

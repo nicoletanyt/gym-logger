@@ -1,11 +1,4 @@
-export interface Exercise {
-    id: string;
-    name: string;
-    reps: number;
-    sets?: number;
-    groupId?: string;
-    avgDuration: number;
-}
+import type { Exercise } from "./Exercise.svelte";
 
 export interface Group {
     id: string;
@@ -28,7 +21,6 @@ export enum RowType {
 
 export enum InputMode {
     None,
+    Add,
     New,
-    EditTable,
-    EditRow,
 }

@@ -8,6 +8,9 @@
     import ConfirmDialog from "$lib/components/ConfirmDialog.svelte";
     import { sessionManager } from "$lib/Session.svelte";
     import { routineManager } from "$lib/Routine.svelte";
+    import { exerciseManager } from "$lib/Exercise.svelte";
+    import MetricDisplay from "$lib/components/MetricDisplay.svelte";
+    import { formatDuration } from "$lib/constants";
 
     let dateValue = $state(today(getLocalTimeZone()));
 
@@ -32,7 +35,7 @@
 {/snippet}
 
 <header>
-    <h1 class="text-center">Gym Logger</h1>
+    <h1>Gym Logger</h1>
 </header>
 
 <section>
@@ -41,7 +44,6 @@
         bind:value={dateValue}
         class="rounded-md border shadow-sm items-center"
         captionLayout="dropdown"
-        sessionData={sessionManager.sessions}
     />
 </section>
 
@@ -74,84 +76,6 @@
 </section>
 
 <hr />
-<section>
-    {@render toggleHeading(
-        "All Sessions",
-        showSections.sessions,
-        () => (showSections.sessions = !showSections.sessions),
-    )}
-
-    {#if showSections.sessions}
-        <div class="flex flex-wrap gap-4">
-            {#each Object.values(sessionManager.sessions).slice(0, 2) as session}
-                <Card.Root size="sm" class="flex-1 min-w-[40%]">
-                    <Card.Header>
-                        <Card.Title>{session.date}</Card.Title>
-                        <Card.Description
-                            >{session.duration} mins, {session.effort} ★</Card.Description
-                        >
-                    </Card.Header>
-
-                    <Card.Content>
-                        <ul class="list-disc list-inside space-y-1">
-                            {#each session.exercises as exercise}
-                                <li>
-                                    <span class="font-bold"
-                                        >{exercise.name}</span
-                                    >: {exercise.reps}
-                                    reps, {exercise.sets}
-                                    sets
-                                </li>
-                            {/each}
-                        </ul>
-                    </Card.Content>
-                </Card.Root>
-            {:else}
-                <p>No Sessions Created</p>
-            {/each}
-        </div>
-        <Button variant="secondary" href="/sessions">View All</Button>
-    {/if}
-</section>
-
-<section>
-    {@render toggleHeading(
-        "Routines",
-        showSections.routines,
-        () => (showSections.routines = !showSections.routines),
-    )}
-    {#if showSections.routines}
-        {#each routineManager.routines as routine}
-            <Card.Root
-                size="sm"
-                onclick={() => {
-                    goto("/routines/" + routine.id);
-                }}
-            >
-                <Card.Header>
-                    <Card.Title>{routine.name}</Card.Title>
-                    <Card.Description>Total Sessions:</Card.Description>
-                </Card.Header>
-
-                <Card.Content>
-                    <ul class="list-disc list-inside space-y-1">
-                        {#each routine.exercises as exercise}
-                            <li>
-                                <span class="font-bold">{exercise.name}</span>: {exercise.reps}
-                                reps, {exercise.sets}
-                                sets
-                            </li>
-                        {/each}
-                    </ul>
-                </Card.Content>
-            </Card.Root>
-        {:else}
-            <p>No Routines Created</p>
-        {/each}
-
-        <Button variant="secondary" href="/routines/new">Create Routine</Button>
-    {/if}
-</section>
 
 <section class="space-y-3">
     {@render toggleHeading(

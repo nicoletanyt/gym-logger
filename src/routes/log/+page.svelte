@@ -1,11 +1,8 @@
 <script lang="ts">
-    import { Plus, Star } from "@lucide/svelte";
-    import { Button } from "$lib/components/ui/button/index.js";
     import { Input } from "$lib/components/ui/input/index.js";
     import { Label } from "$lib/components/ui/label/index.js";
     import { Combobox } from "$lib/components/ui/combobox/";
     import { goto } from "$app/navigation";
-    import ExerciseManager from "$lib/components/ExerciseManager.svelte";
     import BackBtn from "$lib/components/BackBtn.svelte";
     import {
         DEFAULT_SESSION,
@@ -13,6 +10,10 @@
         sessionManager,
     } from "$lib/Session.svelte";
     import { routineManager } from "$lib/Routine.svelte";
+    import ActionButton from "$lib/components/ActionButton.svelte";
+    import ExerciseManager from "$lib/components/ExerciseManager.svelte";
+    import Field from "$lib/components/Field.svelte";
+    import StarDisplay from "$lib/components/StarDisplay.svelte";
 
     let newSession = $state<Session>(DEFAULT_SESSION);
 
@@ -28,65 +29,38 @@
 
 <form class="space-y-3">
     <section class="space-y-3">
-        <div class="flex justify-between">
-            <Label class="shrink-0">Duration (in mins)</Label>
-            <Input
-                type="number"
-                class="w-1/2"
-                bind:value={newSession.duration}
-            />
-        </div>
-        <div class="flex justify-between">
-            <Label class="shrink-0">Date</Label>
-            <Input type="date" class="w-1/2" bind:value={newSession.date} />
-        </div>
+        <Field label="Duration (mins)">
+            <Input type="number" bind:value={newSession.duration} />
+        </Field>
+        <Field label="Date">
+            <Input type="date" bind:value={newSession.date} />
+        </Field>
         <div class="flex justify-between">
             <Label class="shrink-0">Level of effort</Label>
-            <div class="flex w-1/2 justify-between">
-                {#each Array.from({ length: 5 }, (_, i) => i + 1) as num}
-                    <Button
-                        variant="outline"
-                        size="icon-sm"
-                        onclick={() => {
-                            newSession.effort = num;
-                        }}
-                    >
-                        <Star
-                            fill={num <= newSession.effort ? "primary" : "none"}
-                        />
-                    </Button>
-                {/each}
-            </div>
+            <StarDisplay bind:value={newSession.effort} className={"w-1/2"} />
         </div>
-        <div class="flex justify-between">
-            <Label class="shrink-0">Routine</Label>
+
+        <Field label="Routine">
             <Combobox
                 noun="routine"
                 options={routineManager.options}
                 bind:value={newSession.routineId}
             />
-        </div>
+        </Field>
     </section>
 
-    <hr />
-
     <section>
+        <h2>Exercises</h2>
         <ExerciseManager bind:exercises={newSession.exercises} />
     </section>
 </form>
 
-<section class="fixed w-full left-0 bottom-0 px-10">
-    <Button
-        variant="secondary"
-        class="bg-green-300"
-        onclick={() => {
-            const result = sessionManager.addSession(newSession);
+<ActionButton
+    text="Add Session"
+    onclick={() => {
+        const result = sessionManager.addSession(newSession);
 
-            alert(result.success ? "Session Added!" : result.message);
-            if (result.success) goto("/");
-        }}
-    >
-        <Plus />
-        Add Session
-    </Button>
-</section>
+        alert(result.success ? "Session Added!" : result.message);
+        if (result.success) goto("/");
+    }}
+/>
