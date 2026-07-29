@@ -144,7 +144,7 @@ class ExerciseManager {
     }
     addExercise(newExercise: Exercise) {
         // TODO: validation (for img)
-        this.exercises.push(newExercise);
+        this.exercises.push({ ...newExercise });
     }
 }
 

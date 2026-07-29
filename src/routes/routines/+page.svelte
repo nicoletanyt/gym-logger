@@ -46,6 +46,8 @@
                 {/each}
             </Card.Content>
         </Card.Root>
+    {:else}
+        <p>No Routines Created</p>
     {/each}
 </section>
 

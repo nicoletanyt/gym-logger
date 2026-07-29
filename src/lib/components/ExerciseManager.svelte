@@ -236,7 +236,7 @@
                         );
                         exercises[index] = result.data;
                     } else {
-                        exercises.push(result.data);
+                        exercises.push({ ...result.data });
                     }
                     showAdd = false;
                     showEdit = false;
