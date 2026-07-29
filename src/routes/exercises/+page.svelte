@@ -26,6 +26,8 @@
 <section>
     {#each exerciseManager.exercises as item}
         <ExerciseCard exercise={item} />
+    {:else}
+        <p>No Exercises Added</p>
     {/each}
 </section>
 

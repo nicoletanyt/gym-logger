@@ -46,7 +46,7 @@ class RoutineManager {
         if (newRoutine.exercises.length == 0)
             return { success: false, message: "need to add exercises. no slacking." };
 
-        this.routines.push(newRoutine);
+        this.routines.push({ ...newRoutine });
         this.updateData();
         return { success: true };
     }
