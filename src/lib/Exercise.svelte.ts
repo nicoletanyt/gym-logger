@@ -40,6 +40,7 @@ export interface Exercise {
     id: string;
     name: string;
     imageLink?: string; // TODO:
+    note?: string;
     metricType: MetricType;
 }
 
@@ -104,6 +105,7 @@ class ExerciseManager {
             id: uuidv4(),
             name: "",
             imageLink: "",
+            note: "",
             metricType: "weight",
         };
     }

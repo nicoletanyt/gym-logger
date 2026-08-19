@@ -77,7 +77,7 @@
 
 <hr />
 
-<section class="space-y-3">
+<section class="space-y-5">
     {@render toggleHeading(
         "Settings",
         showSections.settings,
@@ -85,15 +85,25 @@
     )}
 
     {#if showSections.settings}
-        <ConfirmDialog
-            onconfirm={() => {
-                localStorage.clear();
-                location.reload();
-            }}
-        >
-            {#snippet trigger()}
-                Delete Data
-            {/snippet}
-        </ConfirmDialog>
+        <div class="grid gap-3">
+            <ConfirmDialog
+                onconfirm={() => {
+                    localStorage.clear();
+                    location.reload();
+                }}
+            >
+                {#snippet trigger()}
+                    Delete Data
+                {/snippet}
+            </ConfirmDialog>
+            <Button
+                onclick={() => {
+                    goto("/import");
+                }}
+                variant={"secondary"}
+            >
+                Import Data
+            </Button>
+        </div>
     {/if}
 </section>
