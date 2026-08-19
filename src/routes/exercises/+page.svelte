@@ -163,6 +163,9 @@
             <Field label="Image Link">
                 <Input bind:value={newExercise.imageLink} />
             </Field>
+            <Field label="Note">
+                <Input bind:value={newExercise.note} />
+            </Field>
         </section>
 
         <ActionButton
