@@ -66,6 +66,18 @@ class SessionManager {
         return session;
     }
 
+    removeExerciseEntries(exerciseIds: string[]) {
+        for (const session of Object.values(this.sessions)) {
+            session.exercises = session.exercises.filter(
+                (e) => !exerciseIds.includes(e.exerciseId),
+            );
+        }
+        this.activeSession.exercises = this.activeSession.exercises.filter(
+            (e) => !exerciseIds.includes(e.exerciseId),
+        );
+        this.updateData();
+    }
+
     // for stats
     getCount() {
         return Object.keys(this.sessions).length;

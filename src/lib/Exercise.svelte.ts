@@ -146,6 +146,9 @@ class ExerciseManager {
         // TODO: validation (for img)
         this.exercises.push({ ...newExercise });
     }
+    removeExercises(ids: string[]) {
+        this.exercises = this.exercises.filter((e) => !ids.includes(e.id));
+    }
 }
 
 export const exerciseManager = new ExerciseManager();
