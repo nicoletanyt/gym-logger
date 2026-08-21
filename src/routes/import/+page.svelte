@@ -7,7 +7,11 @@
 
     let text = $state("");
     let result = $state<ImportResult | null>(null);
+
     let showDialog = $state(false);
+    let errorMsg = $state("");
+    let showError = $state(false);
+    let desc = $state("");
 
     function plural(n: number, word: string): string {
         return `${n} ${word}${n == 1 ? "" : "s"}`;
@@ -15,20 +19,27 @@
 
     function handleImport() {
         if (!text.trim()) {
-            alert("Paste some session data first.");
+            errorMsg = "Paste some session data first.";
+            showError = true;
             return;
         }
         try {
             result = importText(text);
             if (result.sessionsAdded === 0) {
-                alert(
-                    "No sessions were imported. Make sure each session starts with a date like 9/8.",
-                );
+                errorMsg =
+                    "No sessions were imported. Make sure each session starts with a date like 9/8.";
+                showError = true;
             } else {
+                text = "";
                 showDialog = true;
+                desc =
+                    result.exercisesAdded > 0
+                        ? `${plural(result.exercisesAdded, "exercise")} and ${plural(result.sessionsAdded, "session")} were created.`
+                        : `${plural(result.sessionsAdded, "session")} were created.`;
             }
         } catch (err) {
-            alert((err as Error).message);
+            errorMsg = (err as Error).message;
+            showError = true;
         }
     }
 </script>
@@ -43,8 +54,10 @@
             exercise per line with values like
             <code class="text-foreground">7kg x10, 3 sets</code> or
             <code class="text-foreground">8.5km/h for 15mins</code>, and end
-            with <code class="text-foreground">duration: 43mins</code> (or
-            <code class="text-foreground">total:</code>) for the session length.
+            every session with
+            <code class="text-foreground">duration: 43mins</code> (or
+            <code class="text-foreground">total:</code>) for the session length
+            — sessions without it cannot be imported.
         </p>
     </header>
 
@@ -59,16 +72,33 @@
     </Button>
 </div>
 
+<Dialog.Root bind:open={showError}>
+    <Dialog.Content>
+        <Dialog.Header>
+            <Dialog.Title>Import Failed</Dialog.Title>
+            <Dialog.Description>{errorMsg}</Dialog.Description>
+        </Dialog.Header>
+        <Dialog.Footer>
+            <Button
+                variant="outline"
+                onclick={() => {
+                    showError = false;
+                }}
+            >
+                OK
+            </Button>
+        </Dialog.Footer>
+    </Dialog.Content>
+</Dialog.Root>
+
 <Dialog.Root bind:open={showDialog}>
     <Dialog.Content>
         <Dialog.Header>
             <Dialog.Title>
-                Exercises and Sessions Imported Successfully!
+                {title}
             </Dialog.Title>
             <Dialog.Description>
-                {result
-                    ? `${plural(result.exercisesAdded, "exercise")} and ${plural(result.sessionsAdded, "session")} were created.`
-                    : ""}
+                {desc}
             </Dialog.Description>
         </Dialog.Header>
         <Dialog.Footer>
@@ -83,3 +113,4 @@
         </Dialog.Footer>
     </Dialog.Content>
 </Dialog.Root>
+

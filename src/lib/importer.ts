@@ -128,18 +128,26 @@ export function parseImportText(
     if (dates.length === 0) return [];
 
     const sessions: ParsedSession[] = [];
+    const missing: string[] = [];
     for (let i = 0; i < dates.length; i++) {
         const d = dates[i];
         const end = i + 1 < dates.length ? dates[i + 1].start : text.length;
         const body = text.slice(d.start + d.len, end);
 
         let exercisesText = body;
-        let duration = 30 * 60;
-        const totalMatch = /\b(?:total|duration)\s*:?\s*([^]*)$/i.exec(body);
-        if (totalMatch) {
-            duration = parseDurationToSeconds(totalMatch[1]);
-            exercisesText = body.slice(0, totalMatch.index);
+        let duration = 0;
+        const totalMatch = /\b(?:total|duration)\s*:?\s*([^\n]*)\s*$/i.exec(
+            body,
+        );
+        const seconds = totalMatch
+            ? parseDurationToSeconds(totalMatch[1])
+            : 0;
+        if (!totalMatch || seconds <= 0) {
+            missing.push(`${d.day}/${d.month}`);
+            continue;
         }
+        duration = seconds;
+        exercisesText = body.slice(0, totalMatch.index);
 
         const clauseRe = /\d+(?:\.\d+)?\s+sets?|\d+\s*mins?/g;
         const clauses: string[] = [];
@@ -159,6 +167,15 @@ export function parseImportText(
             duration,
             exercises,
         });
+    }
+    if (missing.length > 0) {
+        const list =
+            missing.length === 1
+                ? missing[0]
+                : `${missing.slice(0, -1).join(", ")} and ${missing[missing.length - 1]}`;
+        throw new Error(
+            `No duration added for session${missing.length === 1 ? "" : "s"} on ${list}`,
+        );
     }
     return sessions;
 }
