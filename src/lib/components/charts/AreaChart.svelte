@@ -1,11 +1,9 @@
 <script lang="ts">
-    import { BarChart } from "layerchart";
-    import { scaleBand } from "d3-scale";
+    import { AreaChart } from "layerchart";
+    import { scalePoint } from "d3-scale";
     import * as Chart from "$lib/components/ui/chart/index.js";
     import * as Card from "$lib/components/ui/card/index.js";
     import { cubicInOut } from "svelte/easing";
-    import ChartContainer from "../ui/chart/chart-container.svelte";
-    import { formatDuration } from "$lib/constants";
 
     type Props = {
         title?: string;
@@ -13,23 +11,25 @@
         chartData: Record<string, unknown>[];
         label: string;
         key: string;
+        x: string;
         y: string;
         format?: (value: number) => string;
     };
 
     const {
-        title = "Bar Chart",
+        title = "Area Chart",
         description = "",
         chartData,
         label,
         key,
+        x,
         y,
-        format = formatDuration,
+        format = (value) => `${value}`,
     }: Props = $props();
 
-    const chartConfig = {
+    const chartConfig = $derived({
         [key]: { label, color: "var(--chart-2)" },
-    } satisfies Chart.ChartConfig;
+    } satisfies Chart.ChartConfig);
 </script>
 
 <Card.Root>
@@ -39,29 +39,23 @@
     </Card.Header>
     <Card.Content>
         <Chart.Container config={chartConfig}>
-            <BarChart
-                height={120}
-                labels={{ offset: 12 }}
+            <AreaChart
+                height={160}
                 data={chartData}
-                orientation="horizontal"
-                yScale={scaleBand().padding(0.25)}
-                {y}
-                axis="y"
-                rule={false}
-                grid={false}
-                series={[
-                    {
-                        key,
-                        label,
-                        color: chartConfig[key].color,
-                    },
-                ]}
-                padding={{ right: 50 }}
+                x={x}
+                y={y}
+                xScale={scalePoint().padding(0.5)}
+                series={[{ key, label, color: chartConfig[key].color }]}
                 props={{
-                    bars: {
-                        stroke: "none",
-                        radius: 5,
-                        rounded: "all",
+                    area: {
+                        fillOpacity: 0.3,
+                        motion: {
+                            type: "tween",
+                            duration: 500,
+                            easing: cubicInOut,
+                        },
+                    },
+                    line: {
                         motion: {
                             type: "tween",
                             duration: 500,
@@ -69,10 +63,10 @@
                         },
                     },
                     highlight: { area: { fill: "none" } },
-                    yAxis: {
+                    xAxis: {
                         tickLabelProps: {
-                            textAnchor: "start",
-                            dx: 6,
+                            textAnchor: "middle",
+                            dx: 0,
                             class: "stroke-none fill-background!",
                         },
                         tickLength: 0,
@@ -88,14 +82,12 @@
                             <div
                                 class="flex w-full items-center text-center justify-between gap-1"
                             >
-                                <span
-                                    >{name}: {format(value as number)}</span
-                                >
+                                <span>{name}: {format(value as number)}</span>
                             </div>
                         {/snippet}
                     </Chart.Tooltip>
                 {/snippet}
-            </BarChart>
+            </AreaChart>
         </Chart.Container>
     </Card.Content>
 </Card.Root>

@@ -18,7 +18,7 @@
     import { sessionManager } from "$lib/Session.svelte";
     import { routineManager } from "$lib/Routine.svelte";
     import { cn } from "$lib/utils";
-    import { Trash, X, Pencil } from "@lucide/svelte";
+    import { Check, Trash, X, Pencil } from "@lucide/svelte";
 
     let newExercise = $state<Exercise>(exerciseManager.createDefaultExercise());
     let showAdd = $state(false);
@@ -58,20 +58,17 @@
 <header class="flex justify-between items-center space-y-0">
     <h1>Exercises</h1>
     {#if exerciseManager.exercises.length > 0}
-        {#if isEditing}
-            <Button variant="ghost" size="sm" onclick={toggleEdit}>
-                Done
-            </Button>
-        {:else}
-            <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Edit exercises"
-                onclick={toggleEdit}
-            >
+        <Button
+            variant="outline"
+            aria-label="Edit exercises"
+            onclick={toggleEdit}
+        >
+            {#if isEditing}
+                <Check />
+            {:else}
                 <Pencil />
-            </Button>
-        {/if}
+            {/if}
+        </Button>
     {/if}
 </header>
 

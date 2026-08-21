@@ -3,12 +3,22 @@
 
     type size = "sm" | "default";
 
-    let { title = "", size: size, icon = null, content = "" } = $props();
+    let {
+        title = "",
+        size = "default",
+        icon = null,
+        content = "",
+    }: {
+        title?: string;
+        size?: size;
+        icon?: any;
+        content?: string;
+    } = $props();
 </script>
 
-<Card.Root {size}>
+<Card.Root {size} class="h-full">
     {#if size == "default"}
-        <Card.Title>
+        <Card.Title class="px-6">
             {title}
         </Card.Title>
     {/if}

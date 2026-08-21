@@ -183,6 +183,8 @@ export function importText(text: string): ImportResult {
                 };
                 exerciseManager.exercises.push(exercise);
                 exercisesAdded++;
+            } else if (exercise.metricType !== ex.metricType) {
+                exercise.metricType = ex.metricType;
             }
             const entry = exerciseManager.createEntry(exercise.id, ex.metric);
             if (entry.success) entries.push(entry.data);
