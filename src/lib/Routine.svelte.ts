@@ -54,6 +54,14 @@ class RoutineManager {
         this.routines = this.routines.filter((r) => r.id != id);
         this.updateData();
     }
+    removeExerciseEntries(exerciseIds: string[]) {
+        for (const routine of this.routines) {
+            routine.exercises = routine.exercises.filter(
+                (e) => !exerciseIds.includes(e.exerciseId),
+            );
+        }
+        this.updateData();
+    }
     updateRoutine(newRoutine: Routine) {
         this.deleteRoutine(newRoutine.id);
         this.addRoutine(newRoutine);

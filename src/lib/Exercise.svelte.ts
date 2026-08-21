@@ -40,6 +40,7 @@ export interface Exercise {
     id: string;
     name: string;
     imageLink?: string; // TODO:
+    note?: string;
     metricType: MetricType;
 }
 
@@ -104,6 +105,7 @@ class ExerciseManager {
             id: uuidv4(),
             name: "",
             imageLink: "",
+            note: "",
             metricType: "weight",
         };
     }
@@ -145,6 +147,18 @@ class ExerciseManager {
     addExercise(newExercise: Exercise) {
         // TODO: validation (for img)
         this.exercises.push({ ...newExercise });
+        this.updateData();
+    }
+    removeExercises(ids: string[]) {
+        this.exercises = this.exercises.filter((e) => !ids.includes(e.id));
+        this.updateData();
+    }
+    updateExercise(updated: Exercise) {
+        const index = this.exercises.findIndex((e) => e.id == updated.id);
+        if (index != -1) {
+            this.exercises[index] = { ...updated };
+            this.updateData();
+        }
     }
 }
 

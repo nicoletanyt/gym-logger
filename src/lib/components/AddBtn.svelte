@@ -9,7 +9,7 @@
 <Button
     class={cn(
         buttonVariants({ variant: "default", size: "icon-lg" }),
-        "absolute bottom-5 right-0",
+        "fixed bottom-24 right-11 z-10 size-11",
     )}
     {onclick}
 >
