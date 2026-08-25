@@ -14,7 +14,6 @@
             <span class="font-bold">
                 {session.date}
             </span>
-            <span>{session.effort} ★ </span>
         </Card.Title>
         <Card.Description>{formatDuration(session.duration)}</Card.Description>
     </Card.Header>

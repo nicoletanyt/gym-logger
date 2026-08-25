@@ -1,12 +1,10 @@
 <script lang="ts">
     import * as Popover from "$lib/components/ui/popover/index.js";
     import * as Calendar from "$lib/components/ui/calendar/index.js";
-    import { formatDuration, getLevel, INTENSITY_MAP } from "$lib/constants";
+    import { formatDuration, INTENSITY_MAP } from "$lib/constants";
     import { sessionManager } from "$lib/Session.svelte";
     import { exerciseManager } from "$lib/Exercise.svelte";
     import MetricDisplay from "./MetricDisplay.svelte";
-    import { BicepsFlexed, Timer } from "@lucide/svelte";
-    import StarDisplay from "./StarDisplay.svelte";
 
     let { date, selectedDate = $bindable(), selectedSession } = $props();
 </script>
@@ -14,9 +12,7 @@
 <Popover.Root>
     <Popover.Trigger>
         <Calendar.Day
-            class={INTENSITY_MAP[
-                getLevel(sessionManager.sessions[date.toString()]?.effort ?? 0)
-            ]}
+            class={INTENSITY_MAP[sessionManager.getLevel(date.toString())]}
             onclick={() => {
                 selectedDate = date.toString();
             }}
@@ -30,8 +26,7 @@
         {#if selectedSession}
             <div class="space-y-3">
                 <p class="text-muted-foreground">
-                    {formatDuration(selectedSession.duration)}, {selectedSession.effort}
-                    ★
+                    {formatDuration(selectedSession.duration)}
                 </p>
 
                 <div>

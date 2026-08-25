@@ -18,7 +18,10 @@
     import Field from "./Field.svelte";
     import MetricDisplay from "./MetricDisplay.svelte";
 
-    let { exercises = $bindable(), routineId = $bindable() }: { exercises: ExerciseEntry[]; routineId?: string } = $props();
+    let {
+        exercises = $bindable(),
+        routineId = $bindable(),
+    }: { exercises: ExerciseEntry[]; routineId?: string } = $props();
     import { routineManager } from "$lib/Routine.svelte";
     let metric = $state<ExerciseMetric>(createMetric("weight"));
     let exerciseId = $state("");

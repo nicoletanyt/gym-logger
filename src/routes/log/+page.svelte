@@ -35,10 +35,6 @@
         <Field label="Date">
             <Input type="date" bind:value={newSession.date} />
         </Field>
-        <div class="flex justify-between">
-            <Label class="shrink-0">Level of effort</Label>
-            <StarDisplay bind:value={newSession.effort} className={"w-1/2"} />
-        </div>
 
         <Field label="Routine">
             <Combobox
