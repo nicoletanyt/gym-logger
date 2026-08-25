@@ -49,11 +49,16 @@ export function formatDuration(seconds: number) {
         return `${Math.floor(seconds)}s`;
     }
     let mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
+    const secs = Math.floor(seconds % 60);
 
-    if (mins < 60) return `${mins}m ${secs.toString().padStart(2, "0")}s`;
+    if (mins < 60) {
+        if (secs === 0) return `${mins}m`;
+        return `${mins}m ${secs.toString().padStart(2, "0")}s`;
+    }
 
     const hours = Math.floor(mins / 60);
     mins %= 60;
+    if (mins === 0 && secs === 0) return `${hours}h`;
+    if (secs === 0) return `${hours}h ${mins.toString().padStart(2, "0")}m`;
     return `${hours}h ${mins.toString().padStart(2, "0")}m ${secs.toString().padStart(2, "0")}s`;
 }

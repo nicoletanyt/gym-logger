@@ -57,20 +57,26 @@
 </section>
 
 <section class="grid-cols-2 gap-5">
-    <Card.Root>
+    <Card.Root class="h-full">
         <Card.Header>
             <Card.Title>Total Sessions</Card.Title>
         </Card.Header>
-        <Card.Content>
-            <p>{sessionManager.getCount()}</p>
+        <Card.Content class="flex h-full">
+            <p class="text-lg">
+                <span class="font-bold">{sessionManager.getCount()}</span>
+            </p>
         </Card.Content>
     </Card.Root>
-    <Card.Root>
+    <Card.Root class="h-full">
         <Card.Header>
             <Card.Title>Total Time</Card.Title>
         </Card.Header>
-        <Card.Content>
-            <p>{sessionManager.getTotalDuration()}</p>
+        <Card.Content class="flex h-full">
+            <p class="text-lg">
+                <span class="font-bold"
+                    >{formatDuration(sessionManager.getTotalDuration())}</span
+                >
+            </p>
         </Card.Content>
     </Card.Root>
 </section>
