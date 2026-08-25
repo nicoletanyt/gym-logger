@@ -1,41 +1,21 @@
 <script lang="ts">
-    import { ChevronDown, ChevronRight } from "@lucide/svelte";
+    import { ChevronDown, ChevronRight, User } from "@lucide/svelte";
     import { getLocalTimeZone, today } from "@internationalized/date";
     import { Calendar } from "$lib/components/ui/calendar/index.js";
     import { Button } from "$lib/components/ui/button/index.js";
     import * as Card from "$lib/components/ui/card/index.js";
     import { goto } from "$app/navigation";
-    import ConfirmDialog from "$lib/components/ConfirmDialog.svelte";
     import { sessionManager } from "$lib/Session.svelte";
-    import { routineManager } from "$lib/Routine.svelte";
-    import { exerciseManager } from "$lib/Exercise.svelte";
-    import MetricDisplay from "$lib/components/MetricDisplay.svelte";
     import { formatDuration } from "$lib/constants";
 
     let dateValue = $state(today(getLocalTimeZone()));
-
-    let showSections = $state({
-        sessions: false,
-        routines: true,
-        settings: true,
-    });
 </script>
 
-{#snippet toggleHeading(heading: string, show: boolean, onclick: any)}
-    <div class="flex justify-between items-center">
-        <h2>{heading}</h2>
-        <Button variant="ghost" size="icon-lg" {onclick}>
-            {#if show}
-                <ChevronDown />
-            {:else}
-                <ChevronRight />
-            {/if}
-        </Button>
-    </div>
-{/snippet}
-
-<header>
+<header class="flex justify-between items-center space-y-0">
     <h1>Gym Logger</h1>
+    <Button variant="secondary" size="icon-lg" onclick={() => goto("/profile")}>
+        <User fill={"#18181b"} />
+    </Button>
 </header>
 
 <section>
@@ -79,37 +59,4 @@
             </p>
         </Card.Content>
     </Card.Root>
-</section>
-
-<hr />
-
-<section class="space-y-5">
-    {@render toggleHeading(
-        "Settings",
-        showSections.settings,
-        () => (showSections.settings = !showSections.settings),
-    )}
-
-    {#if showSections.settings}
-        <div class="grid gap-3">
-            <ConfirmDialog
-                onconfirm={() => {
-                    localStorage.clear();
-                    location.reload();
-                }}
-            >
-                {#snippet trigger()}
-                    Delete Data
-                {/snippet}
-            </ConfirmDialog>
-            <Button
-                onclick={() => {
-                    goto("/import");
-                }}
-                variant={"secondary"}
-            >
-                Import Data
-            </Button>
-        </div>
-    {/if}
 </section>
