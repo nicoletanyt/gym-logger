@@ -106,6 +106,50 @@ class SessionManager {
         return this.activeSession.exercises.length;
     }
 
+    // for homepage stats
+    calculateStreak(): number {
+        const sessions = Object.values(this.sessions).sort(
+            (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+        );
+
+        if (sessions.length === 0) return 0;
+
+        const todayDate = new Date();
+        todayDate.setHours(0, 0, 0, 0);
+
+        const sessionDates = new Set<string>(
+            sessions.map((s) => new Date(s.date).toDateString()),
+        );
+
+        let streak = 0;
+        let checkDate = new Date(todayDate);
+
+        while (sessionDates.has(checkDate.toDateString())) {
+            streak++;
+            checkDate = new Date(checkDate);
+            checkDate.setDate(checkDate.getDate() - 1);
+        }
+
+        return streak;
+    }
+    calculateWorkoutsThisWeek(): number {
+        const now = new Date();
+        const startOfWeek = new Date(
+            now.setDate(now.getDate() - now.getDay() + 1),
+        );
+        startOfWeek.setHours(0, 0, 0, 0);
+
+        let count = 0;
+        Object.values(this.sessions).forEach((session) => {
+            const sessionDate = new Date(session.date);
+            sessionDate.setHours(0, 0, 0, 0);
+            if (sessionDate >= startOfWeek) {
+                count++;
+            }
+        });
+        return count;
+    }
+
     // for calendar
     getMaxDuration(): number {
         const durations = Object.values(this.sessions).map((s) => s.duration);

@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { ChevronDown, ChevronRight, User } from "@lucide/svelte";
+    import { User } from "@lucide/svelte";
     import { getLocalTimeZone, today } from "@internationalized/date";
     import { Calendar } from "$lib/components/ui/calendar/index.js";
     import { Button } from "$lib/components/ui/button/index.js";
@@ -55,6 +55,30 @@
             <p class="text-lg">
                 <span class="font-bold"
                     >{formatDuration(sessionManager.getTotalDuration())}</span
+                >
+            </p>
+        </Card.Content>
+    </Card.Root>
+    <Card.Root class="h-full">
+        <Card.Header>
+            <Card.Title>Streak</Card.Title>
+        </Card.Header>
+        <Card.Content class="flex h-full">
+            <p class="text-lg">
+                <span class="font-bold"
+                    >{sessionManager.calculateStreak()} days</span
+                >
+            </p>
+        </Card.Content>
+    </Card.Root>
+    <Card.Root class="h-full">
+        <Card.Header>
+            <Card.Title>Workouts this week</Card.Title>
+        </Card.Header>
+        <Card.Content class="flex h-full">
+            <p class="text-lg">
+                <span class="font-bold"
+                    >{sessionManager.calculateWorkoutsThisWeek()}</span
                 >
             </p>
         </Card.Content>
