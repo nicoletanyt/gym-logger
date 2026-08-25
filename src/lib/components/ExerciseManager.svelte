@@ -18,7 +18,8 @@
     import Field from "./Field.svelte";
     import MetricDisplay from "./MetricDisplay.svelte";
 
-    let { exercises = $bindable() }: { exercises: ExerciseEntry[] } = $props();
+    let { exercises = $bindable(), routineId = $bindable() }: { exercises: ExerciseEntry[]; routineId?: string } = $props();
+    import { routineManager } from "$lib/Routine.svelte";
     let metric = $state<ExerciseMetric>(createMetric("weight"));
     let exerciseId = $state("");
 
@@ -27,9 +28,20 @@
     let showAdd = $state(false);
     let showEdit = $state(false);
 
+    function persistChanges() {
+        if (routineId) {
+            const routine = routineManager.getById(routineId);
+            if (routine) {
+                routine.exercises = exercises;
+                routineManager.updateRoutine(routine);
+            }
+        }
+    }
+
     function deleteItems() {
         exercises = exercises.filter((e) => !selectedRows.includes(e.id));
         selectedRows = [];
+        persistChanges();
     }
 
     function editItem() {
@@ -238,6 +250,7 @@
                     } else {
                         exercises.push({ ...result.data });
                     }
+                    persistChanges();
                     showAdd = false;
                     showEdit = false;
                 } else alert(result.message);

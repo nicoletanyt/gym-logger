@@ -57,7 +57,7 @@
 </header>
 
 <section>
-    <ExerciseManager bind:exercises={routine.exercises} />
+    <ExerciseManager bind:exercises={routine.exercises} routineId={id} />
 </section>
 
 <!-- TODO: -->
