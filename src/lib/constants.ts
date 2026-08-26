@@ -39,11 +39,6 @@ export const DEFAULT_GROUP: Group = {
     sets: 1,
 };
 
-export function getLevel(effort: number): number {
-    // maps the range from 1-4
-    return Math.round((effort / 5) * 4);
-}
-
 export function formatDuration(seconds: number) {
     if (seconds < 60) {
         return `${Math.floor(seconds)}s`;

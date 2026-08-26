@@ -2,14 +2,12 @@
     import { Check, Pencil, Trash2 } from "@lucide/svelte";
     import { page } from "$app/state";
     import Button from "$lib/components/ui/button/button.svelte";
-    import * as Card from "$lib/components/ui/card/index.js";
     import ExerciseManager from "$lib/components/ExerciseManager.svelte";
     import ConfirmDialog from "$lib/components/ConfirmDialog.svelte";
     import { goto } from "$app/navigation";
     import BackBtn from "$lib/components/BackBtn.svelte";
     import { routineManager } from "$lib/Routine.svelte";
     import Input from "$lib/components/ui/input/input.svelte";
-    import ActionButton from "$lib/components/ActionButton.svelte";
 
     const id = page.params.id ?? "";
     const routine = $state($state.snapshot(routineManager.getById(id)!));

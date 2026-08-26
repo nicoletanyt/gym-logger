@@ -1,6 +1,5 @@
 <script lang="ts">
     import { Input } from "$lib/components/ui/input/index.js";
-    import { Label } from "$lib/components/ui/label/index.js";
     import { Combobox } from "$lib/components/ui/combobox/";
     import { goto } from "$app/navigation";
     import BackBtn from "$lib/components/BackBtn.svelte";
@@ -13,7 +12,6 @@
     import ActionButton from "$lib/components/ActionButton.svelte";
     import ExerciseManager from "$lib/components/ExerciseManager.svelte";
     import Field from "$lib/components/Field.svelte";
-    import StarDisplay from "$lib/components/StarDisplay.svelte";
 
     let newSession = $state<Session>(DEFAULT_SESSION);
 
@@ -35,10 +33,6 @@
         <Field label="Date">
             <Input type="date" bind:value={newSession.date} />
         </Field>
-        <div class="flex justify-between">
-            <Label class="shrink-0">Level of effort</Label>
-            <StarDisplay bind:value={newSession.effort} className={"w-1/2"} />
-        </div>
 
         <Field label="Routine">
             <Combobox

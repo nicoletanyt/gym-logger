@@ -100,11 +100,15 @@ function parseExerciseClause(clause: string): ParsedExercise {
         .replace(/\s+/g, " ")
         .trim();
 
-    const parts = cleaned.split(",").map((p) => p.trim()).filter(Boolean);
+    const parts = cleaned
+        .split(",")
+        .map((p) => p.trim())
+        .filter(Boolean);
     const name = parts[0] ?? "";
     const note = parts.slice(1).join(", ");
 
-    if (!name) throw new Error(`Could not determine exercise name from "${clause}"`);
+    if (!name)
+        throw new Error(`Could not determine exercise name from "${clause}"`);
 
     return { name, note, metricType, metric };
 }
@@ -139,9 +143,7 @@ export function parseImportText(
         const totalMatch = /\b(?:total|duration)\s*:?\s*([^\n]*)\s*$/i.exec(
             body,
         );
-        const seconds = totalMatch
-            ? parseDurationToSeconds(totalMatch[1])
-            : 0;
+        const seconds = totalMatch ? parseDurationToSeconds(totalMatch[1]) : 0;
         if (!totalMatch || seconds <= 0) {
             missing.push(`${d.day}/${d.month}`);
             continue;
@@ -154,9 +156,7 @@ export function parseImportText(
         let lastEnd = 0;
         let cm: RegExpExecArray | null;
         while ((cm = clauseRe.exec(exercisesText))) {
-            clauses.push(
-                exercisesText.slice(lastEnd, cm.index + cm[0].length),
-            );
+            clauses.push(exercisesText.slice(lastEnd, cm.index + cm[0].length));
             lastEnd = cm.index + cm[0].length;
         }
         if (clauses.length === 0) continue;
@@ -211,7 +211,6 @@ export function importText(text: string): ImportResult {
         const session: Session = {
             id: uuidv4(),
             duration: s.duration,
-            effort: 3,
             exercises: entries,
             routineId: "custom",
             date: s.date,

@@ -5,11 +5,7 @@
     import type { ButtonVariant } from "../button/button.svelte";
     import { isEqualMonth, type DateValue } from "@internationalized/date";
     import type { Snippet } from "svelte";
-    import { getLevel, INTENSITY_MAP } from "$lib/constants.js";
-    // import type { Session } from "$lib/Session.js";
     import { sessionManager } from "$lib/Session.svelte.js";
-    import { exerciseManager } from "$lib/Exercise.svelte.js";
-    import MetricDisplay from "$lib/components/MetricDisplay.svelte";
     import DayPopover from "$lib/components/DayPopover.svelte";
 
     let {
