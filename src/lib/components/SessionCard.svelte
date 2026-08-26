@@ -5,17 +5,24 @@
     import type { Session } from "$lib/Session.svelte";
     import MetricDisplay from "./MetricDisplay.svelte";
 
-    let { session }: { session: Session } = $props();
+    type Props = {
+        session: Session;
+        onclick?: () => void;
+    };
+
+    let { session, onclick }: Props = $props();
 </script>
 
-<Card.Root>
+<Card.Root class="cursor-pointer" {onclick}>
     <Card.Header>
         <Card.Title class="flex justify-between">
             <span class="font-bold">
                 {session.date}
             </span>
+            <span class="text-muted-foreground text-sm">
+                {formatDuration(session.duration)}
+            </span>
         </Card.Title>
-        <Card.Description>{formatDuration(session.duration)}</Card.Description>
     </Card.Header>
 
     <Card.Content class="space-y-2">

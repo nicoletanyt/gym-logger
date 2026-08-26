@@ -21,7 +21,7 @@ export const DEFAULT_SESSION: Session = {
 };
 
 class SessionManager {
-    sessions = $state<Record<string, Session>>({});
+    sessions = $state<Record<string, Session>>({}); // date: session
     activeSession = $state<Session>(DEFAULT_SESSION);
 
     loadData() {
@@ -81,6 +81,11 @@ class SessionManager {
         this.activeSession.exercises = this.activeSession.exercises.filter(
             (e) => !exerciseIds.includes(e.exerciseId),
         );
+        this.updateData();
+    }
+
+    deleteSession(date: string) {
+        delete this.sessions[date];
         this.updateData();
     }
 
@@ -166,6 +171,8 @@ class SessionManager {
 
         const minDuration = this.getMinDuration();
         const maxDuration = this.getMaxDuration();
+
+        if (minDuration == maxDuration) return 2;
 
         const interval = (maxDuration - minDuration) / 4;
         const level = Math.round((duration - minDuration) / interval) + 1;
