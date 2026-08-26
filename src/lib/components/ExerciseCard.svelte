@@ -3,7 +3,9 @@
     import * as Card from "$lib/components/ui/card/index.js";
     import { Checkbox } from "$lib/components/ui/checkbox/index.js";
     import { METRICS, type Exercise } from "$lib/Exercise.svelte";
+    import { sessionManager } from "$lib/Session.svelte";
     import MetricTypeTag from "./MetricTypeTag.svelte";
+    import MetricDisplay from "./MetricDisplay.svelte";
 
     type Props = {
         exercise: Exercise;
@@ -18,6 +20,8 @@
         selected = false,
         onselect,
     }: Props = $props();
+
+    let latestMetric = $derived(sessionManager.getLatestExercise(exercise.id));
 </script>
 
 <div class="flex gap-3 items-center">
@@ -41,9 +45,7 @@
             <div class="space-y-2">
                 <p class="font-bold">{exercise.name}</p>
                 <div class="flex gap-2 items-center">
-                    <p>1 Set</p>
-                    <span class="size-1 rounded-full bg-muted-foreground"></span>
-                    <p>10 Reps</p>
+                    <MetricDisplay metric={latestMetric} />
                 </div>
             </div>
             <!-- TAG -->

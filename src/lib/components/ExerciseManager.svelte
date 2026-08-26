@@ -128,7 +128,7 @@
                     <div class="space-y-2">
                         <p class="font-bold">{exercise.name}</p>
                         <div class="flex gap-2 items-center">
-                            <MetricDisplay exercise={e} />
+                            <MetricDisplay metric={e.metric} />
                         </div>
                     </div>
                     <!-- TAG -->
