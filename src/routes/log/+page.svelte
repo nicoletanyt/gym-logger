@@ -25,7 +25,7 @@
     <h1>Log Session</h1>
 </header>
 
-<form class="space-y-3">
+<form class="space-y-3 pb-10">
     <section class="space-y-3">
         <Field label="Duration (mins)">
             <Input type="number" bind:value={newSession.duration} />
