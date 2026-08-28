@@ -11,6 +11,19 @@
 </header>
 
 <section class="space-y-3">
+    <Button
+        onclick={() => {
+            goto("/import");
+        }}
+        variant={"secondary"}
+    >
+        Import Data
+    </Button>
+    <Button onclick={() => {}} variant={"secondary"}>Export Data</Button>
+</section>
+
+<section>
+    <hr />
     <ConfirmDialog
         onconfirm={() => {
             localStorage.clear();
@@ -21,13 +34,4 @@
             Delete Data
         {/snippet}
     </ConfirmDialog>
-    <Button
-        onclick={() => {
-            goto("/import");
-        }}
-        variant={"secondary"}
-    >
-        Import Data
-    </Button>
 </section>
-

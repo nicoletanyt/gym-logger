@@ -101,8 +101,6 @@ class SessionManager {
                 message: "duration needs to be > 0 mins...",
             };
 
-        // format duration to minutes
-        newSession.duration *= 60;
         this.sessions[newSession.date] = newSession;
         this.updateData();
         return { success: true };

@@ -52,7 +52,10 @@
 <ActionButton
     text="Add Session"
     onclick={() => {
-        const result = sessionManager.addSession(newSession);
+        const result = sessionManager.addSession({
+            ...newSession,
+            duration: newSession.duration * 60,
+        });
 
         alert(result.success ? "Session Added!" : result.message);
         if (result.success) goto("/");

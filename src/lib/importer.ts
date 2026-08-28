@@ -26,11 +26,16 @@ export interface ImportResult {
 }
 
 function parseDurationToSeconds(str: string): number {
-    const h = /(\d+)\s*(?:h|hr|hrs|hours)/i.exec(str);
-    const m = /(\d+)\s*(?:m|min|mins|minutes)\b/i.exec(str);
+    const h = /(\d+(?:\.\d+)?)\s*(h|hr|hrs|hour|hours)(?![a-z])/i.exec(str);
+    const m = /(\d+(?:\.\d+)?)\s*(m|min|mins|minute|minutes)(?![a-z])/i.exec(
+        str,
+    );
+
     let totalMinutes = 0;
-    if (h) totalMinutes += parseInt(h[1], 10) * 60;
-    if (m) totalMinutes += parseInt(m[1], 10);
+
+    if (h) totalMinutes += parseFloat(h[1]) * 60;
+    if (m) totalMinutes += parseFloat(m[1]);
+
     return totalMinutes * 60;
 }
 
