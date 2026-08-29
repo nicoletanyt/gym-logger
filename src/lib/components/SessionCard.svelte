@@ -33,7 +33,7 @@
                     <span>{key + 1}.</span>
                     <span class="text-base">{exercise.name}</span>
                 </div>
-                <MetricDisplay exercise={entry} size="lg" />
+                <MetricDisplay metric={entry.metric} size="lg" />
             </div>
         {/each}
     </Card.Content>

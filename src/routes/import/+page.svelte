@@ -46,7 +46,7 @@
 
 <div class="h-full flex flex-col">
     <header class="shrink-0">
-        <BackBtn />
+        <BackBtn dest={"/profile"} />
         <h1>Import Data</h1>
         <p class="text-muted-foreground">Paste your session data in.</p>
         <p class="text-muted-foreground text-sm">
@@ -94,9 +94,7 @@
 <Dialog.Root bind:open={showDialog}>
     <Dialog.Content>
         <Dialog.Header>
-            <Dialog.Title>
-                {title}
-            </Dialog.Title>
+            <Dialog.Title>Imported Successfully</Dialog.Title>
             <Dialog.Description>
                 {desc}
             </Dialog.Description>
@@ -113,4 +111,3 @@
         </Dialog.Footer>
     </Dialog.Content>
 </Dialog.Root>
-

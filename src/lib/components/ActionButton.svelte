@@ -14,8 +14,8 @@
 
 <section
     class={cn(
-        "fixed w-full left-0 px-5",
-        onOverlay ? "bottom-0" : "bottom-18",
+        "fixed left-10 right-10 w-[calc(100%-5rem)]",
+        onOverlay ? "bottom-0" : "bottom-14",
         className,
     )}
 >

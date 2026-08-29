@@ -38,7 +38,7 @@
                         <p>
                             {exercise.name}
                         </p>
-                        <MetricDisplay exercise={entry} size="lg" />
+                        <MetricDisplay metric={entry.metric} size="lg" />
                     {:else}
                         <p>No exercise logged</p>
                     {/each}

@@ -6,6 +6,7 @@
     import {
         exerciseManager,
         METRICS,
+        type Exercise,
         type ExerciseEntry,
         type ExerciseMetric,
         type MetricType,
@@ -17,12 +18,13 @@
     import Input from "./ui/input/input.svelte";
     import Field from "./Field.svelte";
     import MetricDisplay from "./MetricDisplay.svelte";
+    import { sessionManager } from "$lib/Session.svelte";
+    import { routineManager } from "$lib/Routine.svelte";
 
     let {
         exercises = $bindable(),
         routineId = $bindable(),
     }: { exercises: ExerciseEntry[]; routineId?: string } = $props();
-    import { routineManager } from "$lib/Routine.svelte";
     let metric = $state<ExerciseMetric>(createMetric("weight"));
     let exerciseId = $state("");
 
@@ -30,6 +32,8 @@
 
     let showAdd = $state(false);
     let showEdit = $state(false);
+    let showCreateExercise = $state(false);
+    let newExercise = $state<Exercise>(exerciseManager.createDefaultExercise());
 
     function persistChanges() {
         if (routineId) {
@@ -89,8 +93,21 @@
     }
 
     function onExerciseChanged(exerciseId: string) {
-        const exercise = exerciseManager.getById(exerciseId);
-        metric = createMetric(exercise.metricType);
+        metric = sessionManager.getLatestExercise(exerciseId);
+    }
+
+    function onExerciseCreated(name: string) {
+        newExercise = exerciseManager.createDefaultExercise();
+        newExercise.name = name;
+        showCreateExercise = true;
+    }
+
+    function saveNewExercise() {
+        exerciseManager.addExercise({ ...newExercise });
+        exerciseId = newExercise.id;
+        onExerciseChanged(exerciseId);
+        showCreateExercise = false;
+        showAdd = true;
     }
 
     $effect(() => {
@@ -100,6 +117,9 @@
         }
         if (!showEdit) {
             selectedRows = [];
+        }
+        if (!showCreateExercise) {
+            newExercise = exerciseManager.createDefaultExercise();
         }
     });
 </script>
@@ -128,7 +148,7 @@
                     <div class="space-y-2">
                         <p class="font-bold">{exercise.name}</p>
                         <div class="flex gap-2 items-center">
-                            <MetricDisplay exercise={e} />
+                            <MetricDisplay metric={e.metric} />
                         </div>
                     </div>
                     <!-- TAG -->
@@ -201,14 +221,13 @@
             <Field label="Exercise">
                 <Combobox
                     noun="exercise"
-                    options={exerciseManager.exercises.map((m) => {
-                        return {
-                            value: m.id,
-                            label: m.name,
-                        };
-                    })}
+                    options={exerciseManager.exercises.map((m) => ({
+                        value: m.id,
+                        label: m.name,
+                    }))}
                     bind:value={exerciseId}
                     onChange={() => onExerciseChanged(exerciseId)}
+                    onCreate={onExerciseCreated}
                 />
             </Field>
             <Field label="Sets">
@@ -257,6 +276,59 @@
                     showAdd = false;
                     showEdit = false;
                 } else alert(result.message);
+            }}
+        />
+    </Sheet.Content>
+</Sheet.Root>
+
+<Sheet.Root bind:open={showCreateExercise}>
+    <Sheet.Content side="bottom" class="min-h-150 p-4" showCloseButton={false}>
+        <Sheet.Header class="flex justify-between items-center">
+            <Sheet.Title>Create New Exercise</Sheet.Title>
+            <Button
+                variant="ghost"
+                size="icon-sm"
+                onclick={() => {
+                    showCreateExercise = false;
+                }}
+            >
+                <XIcon />
+                <span class="sr-only">Close</span>
+            </Button>
+        </Sheet.Header>
+        <section class="px-4 my-0">
+            <Field label="Name">
+                <Input bind:value={newExercise.name} />
+            </Field>
+            <Field label="Exercise Type">
+                <Combobox
+                    noun="type"
+                    options={Object.values(METRICS).map((m) => {
+                        return {
+                            value: m.name.toLowerCase(),
+                            label: m.name,
+                        };
+                    })}
+                    bind:value={newExercise.metricType}
+                />
+            </Field>
+            <Field label="Image Link">
+                <Input bind:value={newExercise.imageLink} />
+            </Field>
+            <Field label="Note">
+                <Input bind:value={newExercise.note} />
+            </Field>
+        </section>
+
+        <ActionButton
+            text="Add Exercise"
+            onOverlay={true}
+            onclick={() => {
+                if (!newExercise.name.trim()) {
+                    alert("Name is compulsory");
+                    return;
+                }
+                saveNewExercise();
             }}
         />
     </Sheet.Content>

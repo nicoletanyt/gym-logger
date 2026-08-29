@@ -1,22 +1,26 @@
 <script lang="ts">
-    import { UNITS, type ExerciseEntry } from "$lib/Exercise.svelte";
+    import { UNITS, type ExerciseMetric } from "$lib/Exercise.svelte";
 
     const {
-        exercise,
+        metric,
         size = "default",
-    }: { exercise: ExerciseEntry; size?: "lg" | "default" } = $props();
+    }: { metric: ExerciseMetric; size?: "lg" | "default" } = $props();
 </script>
 
 <div
     class={`flex space-x-1 flex-wrap items-center text-muted-foreground ${size == "lg" ? "text-sm" : "text-xs"}`}
 >
-    {#each Object.entries(exercise.metric) as [label, value], key}
+    {#each Object.entries(metric) as [label, value], key}
         {#if label != "type"}
             <p>
-                {value}
+                {#if value == 0}
+                    -
+                {:else}
+                    {value}
+                {/if}
                 {UNITS[label as keyof typeof UNITS]}
             </p>
-            {#if key != Object.values(exercise.metric).length - 1}
+            {#if key != Object.values(metric).length - 1}
                 <span class="size-1 rounded-full bg-muted-foreground"></span>
             {/if}
         {/if}

@@ -78,7 +78,9 @@
                 />
             {/if}
             <Card.Root
-                class="flex-1 {selectedIds.includes(routine.id) ? 'border-primary' : ''}"
+                class="flex-1 {selectedIds.includes(routine.id)
+                    ? 'border-primary'
+                    : ''}"
                 onclick={() => {
                     if (isEditing) toggleSelect(routine.id);
                     else goto("/routines/" + routine.id);
@@ -102,7 +104,7 @@
                                 <span>{key + 1}.</span>
                                 <span class="text-base">{exercise.name}</span>
                             </div>
-                            <MetricDisplay exercise={entry} size="lg" />
+                            <MetricDisplay metric={entry.metric} size="lg" />
                         </div>
                     {/each}
                 </Card.Content>
@@ -114,42 +116,42 @@
 </section>
 
 {#if !isEditing}
-<AddBtn
-    onclick={() => {
-        goto("/routines/new");
-    }}
-/>
+    <AddBtn
+        onclick={() => {
+            goto("/routines/new");
+        }}
+    />
 {:else}
-<div
-    class="fixed bottom-24 left-11 right-11 z-10 flex justify-between items-center bg-background rounded-2xl px-5 py-3 shadow-md"
->
-    <Button variant="ghost" size="sm" onclick={toggleSelectAll}>
-        {allSelected ? "Deselect All" : "Select All"}
-    </Button>
-    {#if selectedIds.length > 0}
-        <ConfirmDialog
-            title="Delete Routines?"
-            description={`This will permanently delete ${selectedIds.length} routine${selectedIds.length == 1 ? "" : "s"} and all related data.`}
-            onconfirm={deleteSelected}
-            buttonVar="destructive"
-        >
-            {#snippet trigger()}
-                <span class="inline-flex items-center gap-1.5">
-                    <Trash class="size-4" />
-                    Delete ({selectedIds.length})
-                </span>
-            {/snippet}
-        </ConfirmDialog>
-    {:else}
-        <span
-            class={cn(
-                buttonVariants({ variant: "destructive" }),
-                "opacity-40 pointer-events-none select-none",
-            )}
-        >
-            <Trash class="size-4" />
-            Delete
-        </span>
-    {/if}
-</div>
+    <div
+        class="fixed bottom-24 left-11 right-11 z-10 flex justify-between items-center bg-background rounded-2xl px-5 py-3 shadow-md"
+    >
+        <Button variant="ghost" size="sm" onclick={toggleSelectAll}>
+            {allSelected ? "Deselect All" : "Select All"}
+        </Button>
+        {#if selectedIds.length > 0}
+            <ConfirmDialog
+                title="Delete Routines?"
+                description={`This will permanently delete ${selectedIds.length} routine${selectedIds.length == 1 ? "" : "s"} and all related data.`}
+                onconfirm={deleteSelected}
+                buttonVar="destructive"
+            >
+                {#snippet trigger()}
+                    <span class="inline-flex items-center gap-1.5">
+                        <Trash class="size-4" />
+                        Delete ({selectedIds.length})
+                    </span>
+                {/snippet}
+            </ConfirmDialog>
+        {:else}
+            <span
+                class={cn(
+                    buttonVariants({ variant: "destructive" }),
+                    "opacity-40 pointer-events-none select-none",
+                )}
+            >
+                <Trash class="size-4" />
+                Delete
+            </span>
+        {/if}
+    </div>
 {/if}

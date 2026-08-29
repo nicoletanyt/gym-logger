@@ -1,7 +1,11 @@
 import { v4 as uuidv4 } from "uuid";
 import { STORAGE_KEYS, type Result } from "./constants";
 import { routineManager } from "./Routine.svelte";
-import type { ExerciseEntry } from "./Exercise.svelte";
+import {
+    exerciseManager,
+    type ExerciseEntry,
+    type ExerciseMetric,
+} from "./Exercise.svelte";
 
 export interface Session {
     id: string;
@@ -35,6 +39,53 @@ class SessionManager {
             JSON.stringify(this.sessions),
         );
     }
+    getLatestExercise(exerciseId: string): ExerciseMetric {
+        const latestSession = Object.entries(this.sessions)
+            .filter(([_, session]) =>
+                session.exercises.some(
+                    (exercise) => exercise.exerciseId == exerciseId,
+                ),
+            )
+            .sort(([dateA], [dateB]) => dateB.localeCompare(dateA))[0]?.[1];
+
+        if (latestSession === undefined) {
+            const exercise = exerciseManager.getById(exerciseId);
+
+            switch (exercise.metricType) {
+                case "reps":
+                    return {
+                        sets: 0,
+                        type: "reps",
+                        reps: 0,
+                    };
+
+                case "weight":
+                    return {
+                        sets: 0,
+                        type: "weight",
+                        weight: 0,
+                        reps: 0,
+                    };
+
+                case "duration":
+                    return {
+                        sets: 0,
+                        type: "duration",
+                        duration: 0,
+                    };
+
+                case "cardio":
+                    return {
+                        sets: 0,
+                        type: "cardio",
+                        duration: 0,
+                        distance: 0,
+                    };
+            }
+        }
+        return latestSession.exercises.find((e) => e.exerciseId == exerciseId)!
+            .metric;
+    }
 
     addSession(newSession: Session): Result {
         // validation
@@ -50,8 +101,6 @@ class SessionManager {
                 message: "duration needs to be > 0 mins...",
             };
 
-        // format duration to minutes
-        newSession.duration *= 60;
         this.sessions[newSession.date] = newSession;
         this.updateData();
         return { success: true };
