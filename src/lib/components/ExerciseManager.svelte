@@ -18,12 +18,13 @@
     import Input from "./ui/input/input.svelte";
     import Field from "./Field.svelte";
     import MetricDisplay from "./MetricDisplay.svelte";
+    import { sessionManager } from "$lib/Session.svelte";
+    import { routineManager } from "$lib/Routine.svelte";
 
     let {
         exercises = $bindable(),
         routineId = $bindable(),
     }: { exercises: ExerciseEntry[]; routineId?: string } = $props();
-    import { routineManager } from "$lib/Routine.svelte";
     let metric = $state<ExerciseMetric>(createMetric("weight"));
     let exerciseId = $state("");
 
@@ -92,8 +93,7 @@
     }
 
     function onExerciseChanged(exerciseId: string) {
-        const exercise = exerciseManager.getById(exerciseId);
-        metric = createMetric(exercise.metricType);
+        metric = sessionManager.getLatestExercise(exerciseId);
     }
 
     function onExerciseCreated(name: string) {

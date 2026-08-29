@@ -83,8 +83,8 @@ class SessionManager {
                     };
             }
         }
-        return latestSession.exercises.find((e) => e.exerciseId == exerciseId)
-            ?.metric;
+        return latestSession.exercises.find((e) => e.exerciseId == exerciseId)!
+            .metric;
     }
 
     addSession(newSession: Session): Result {
