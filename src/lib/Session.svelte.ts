@@ -114,7 +114,10 @@ class SessionManager {
     applyRoutine(session: Session): Session {
         if (session.routineId != "custom") {
             const routine = routineManager.getById(session.routineId);
-            session.exercises = [...routine.exercises];
+            session.exercises = routine.exercises.map((entry) => ({
+                ...entry,
+                metric: { ...this.getLatestExercise(entry.exerciseId) },
+            }));
         } else {
             session.exercises = [];
         }
