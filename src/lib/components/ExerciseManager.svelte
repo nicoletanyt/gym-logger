@@ -143,7 +143,17 @@
                     }}
                 />
             {/if}
-            <Card.Root size={"sm"} class="mx-px flex-1">
+            <Card.Root
+                size={"sm"}
+                class="mx-px flex-1 {showEdit && selectedRows.includes(e.id) ? 'border-primary' : ''}"
+                onclick={() => {
+                    if (showEdit) {
+                        selectedRows = selectedRows.includes(e.id)
+                            ? selectedRows.filter((id) => id != e.id)
+                            : [...selectedRows, e.id];
+                    }
+                }}
+            >
                 <Card.Content class="flex justify-between items-center">
                     <div class="space-y-2">
                         <p class="font-bold">{exercise.name}</p>

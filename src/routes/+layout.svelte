@@ -21,8 +21,8 @@
     <link rel="icon" href={favicon} />
 </svelte:head>
 
-<div class="flex flex-col h-screen w-screen p-10 pb-22">
-    <main class="flex-1 relative overflow-auto p-1">
+<div class="box-border flex flex-col h-dvh w-full p-10 pb-22">
+    <main class="box-border min-h-0 min-w-0 flex-1 relative overflow-auto p-1">
         {@render children()}
     </main>
 </div>
