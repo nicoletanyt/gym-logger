@@ -24,7 +24,7 @@
 
     <section>
         <h2>Exercises</h2>
-        <ExerciseManager exercises={newRoutine.exercises} />
+        <ExerciseManager bind:exercises={newRoutine.exercises} />
     </section>
 </form>
 
@@ -32,8 +32,8 @@
 <ActionButton
     text="Add Routine"
     className="px-10"
-    onclick={() => {
-        const result = routineManager.addRoutine(newRoutine);
+    onclick={async () => {
+        const result = await routineManager.addRoutine(newRoutine);
 
         alert(result.success ? "Routine Added!" : result.message);
         if (result.success) goto("/routines");

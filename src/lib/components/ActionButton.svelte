@@ -2,6 +2,7 @@
     import { Plus } from "@lucide/svelte";
     import Button from "./ui/button/button.svelte";
     import { cn } from "$lib/utils";
+    import { cloud } from "$lib/cloud.svelte";
 
     let {
         text,
@@ -19,7 +20,7 @@
         className,
     )}
 >
-    <Button variant="secondary" class="bg-green-300" {onclick}>
+    <Button variant="secondary" class="bg-green-300" {onclick} disabled={cloud.saving || cloud.needsReload || cloud.loading}>
         {#if icon}
             {@render icon()}
         {:else}

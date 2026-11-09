@@ -3,7 +3,7 @@
     import SessionCard from "$lib/components/SessionCard.svelte";
     import Button from "$lib/components/ui/button/button.svelte";
     import * as Popover from "$lib/components/ui/popover/index.js";
-    import { sessionManager } from "$lib/Session.svelte";
+    import { sessionManager, compareSessions } from "$lib/Session.svelte";
     import { ArrowDown, ArrowUp, ListFilter } from "@lucide/svelte";
 
     const sortOptions = [
@@ -16,7 +16,7 @@
         Object.values(sessionManager.sessions).sort((a, b) => {
             const comparison =
                 sortBy == "date"
-                    ? a.date.localeCompare(b.date)
+                    ? -compareSessions(a, b)
                     : a.duration - b.duration;
             return sortDirection == "asc" ? comparison : -comparison;
         }),
@@ -75,11 +75,11 @@
 </header>
 
 <div class="grid gap-6">
-    {#each sortedSessions as session (session.date)}
+    {#each sortedSessions as session (session.id)}
         <SessionCard
             {session}
             onclick={() => {
-                goto(`/sessions/${session.date}`);
+                goto(`/sessions/${session.id}`);
             }}
         />
     {:else}

@@ -1,6 +1,8 @@
 import { Dumbbell, Repeat, Timer, SportShoe } from "@lucide/svelte";
-import { STORAGE_KEYS, type Result } from "./constants";
+import { type Result } from "./constants";
 import { v4 as uuidv4 } from "uuid";
+import { cloud } from "./cloud.svelte";
+import { saveExercise } from "./workout-repository";
 
 export interface BaseMetric {
     sets: number;
@@ -42,6 +44,8 @@ export interface Exercise {
     imageLink?: string; // TODO:
     note?: string;
     metricType: MetricType;
+    archived?: boolean;
+    revision?: number;
 }
 
 // eg weight lifting
@@ -75,6 +79,8 @@ export interface ExerciseEntry {
     id: string;
     exerciseId: string;
     metric: ExerciseMetric;
+    avgDuration?: number;
+    exerciseName?: string;
 }
 
 export const UNITS = {
@@ -86,19 +92,8 @@ export const UNITS = {
 };
 
 class ExerciseManager {
-    exercises = $state<Exercise[]>([]);
-
-    loadData() {
-        this.exercises = JSON.parse(
-            localStorage.getItem(STORAGE_KEYS.exercises) ?? "[]",
-        );
-    }
-    updateData() {
-        localStorage.setItem(
-            STORAGE_KEYS.exercises,
-            JSON.stringify(this.exercises),
-        );
-    }
+    get exercises() { return cloud.data.exercises.filter((exercise) => !exercise.archived); }
+    get archivedExercises() { return cloud.data.exercises.filter((exercise) => exercise.archived); }
 
     createDefaultExercise(): Exercise {
         return {
@@ -113,22 +108,22 @@ class ExerciseManager {
     validateEntry(exerciseId: string, metric: ExerciseMetric): Result {
         if (!exerciseId)
             return { success: false, message: "Exercise is compulsory" };
-        if (metric.sets <= 0)
+        if (!Number.isInteger(metric.sets) || metric.sets <= 0)
             return { success: false, message: "Sets cannot be <= 0" };
 
-        if ("weight" in metric && metric.weight <= 0)
+        if ("weight" in metric && (!Number.isFinite(metric.weight) || metric.weight <= 0))
             return { success: false, message: "Weight cannot be <= 0" };
-        if ("reps" in metric && metric.reps <= 0)
+        if ("reps" in metric && (!Number.isInteger(metric.reps) || metric.reps <= 0))
             return { success: false, message: "Reps cannot be <= 0" };
-        if ("duration" in metric && metric.duration <= 0)
+        if ("duration" in metric && (!Number.isFinite(metric.duration) || metric.duration <= 0))
             return { success: false, message: "Duration cannot be <= 0" };
-        if ("distance" in metric && metric.distance <= 0)
+        if ("distance" in metric && (!Number.isFinite(metric.distance) || metric.distance <= 0))
             return { success: false, message: "Distance cannot be <= 0" };
 
         return { success: true };
     }
 
-    createEntry(exerciseId: string, metric: ExerciseMetric): any {
+    createEntry(exerciseId: string, metric: ExerciseMetric): { success: true; data: ExerciseEntry } | { success: false; message: string } {
         const result = this.validateEntry(exerciseId, metric);
         if (!result.success) return result;
 
@@ -137,28 +132,27 @@ class ExerciseManager {
             data: {
                 id: uuidv4(),
                 exerciseId: exerciseId,
-                metric: metric,
+                metric: { ...metric },
             },
         };
     }
-    getById(id: string): Exercise {
-        return this.exercises.find((e) => e.id == id)!;
+    getById(id: string): Exercise | undefined {
+        return cloud.data.exercises.find((e) => e.id == id);
     }
-    addExercise(newExercise: Exercise) {
-        // TODO: validation (for img)
-        this.exercises.push({ ...newExercise });
-        this.updateData();
+    async addExercise(newExercise: Exercise): Promise<Result> {
+        if (!newExercise.name.trim()) return { success: false, message: "Exercise name is required." };
+        const value = $state.snapshot(newExercise);
+        return cloud.mutate((client) => saveExercise(client, value, true));
     }
-    removeExercises(ids: string[]) {
-        this.exercises = this.exercises.filter((e) => !ids.includes(e.id));
-        this.updateData();
+    async removeExercises(ids: string[]): Promise<Result> {
+        return cloud.mutate(async (client) => {
+            const { error } = await client.rpc("archive_exercises", { p_ids: [...ids] });
+            if (error) throw error;
+        });
     }
-    updateExercise(updated: Exercise) {
-        const index = this.exercises.findIndex((e) => e.id == updated.id);
-        if (index != -1) {
-            this.exercises[index] = { ...updated };
-            this.updateData();
-        }
+    async updateExercise(updated: Exercise): Promise<Result> {
+        const value = $state.snapshot(updated);
+        return cloud.mutate((client) => saveExercise(client, value));
     }
 }
 

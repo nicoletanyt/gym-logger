@@ -38,11 +38,15 @@
         selectedIds = [];
     }
 
-    function deleteSelected() {
-        routineManager.routines = routineManager.routines.filter(
-            (r) => !selectedIds.includes(r.id),
-        );
-        routineManager.updateData();
+    async function deleteSelected() {
+        // Each deletion is revision-checked. Stop at the first failure and retain
+        // the remaining selection rather than pretending the batch was atomic.
+        const selected = routineManager.routines.filter((r) => selectedIds.includes(r.id)).map((r) => ({ id: r.id, revision: r.revision }));
+        for (const routine of selected) {
+            const result = await routineManager.deleteRoutine(routine.id, routine.revision);
+            if (!result.success) { alert(result.message); return; }
+            selectedIds = selectedIds.filter((id) => id !== routine.id);
+        }
         toggleEdit();
     }
 </script>
@@ -102,7 +106,7 @@
                         <div class="flex justify-between items-center">
                             <div>
                                 <span>{key + 1}.</span>
-                                <span class="text-base">{exercise.name}</span>
+                                <span class="text-base">{exercise?.name ?? "Unknown exercise"}</span>
                             </div>
                             <MetricDisplay metric={entry.metric} size="lg" />
                         </div>

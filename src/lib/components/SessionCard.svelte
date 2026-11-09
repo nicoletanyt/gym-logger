@@ -18,6 +18,7 @@
         <Card.Title class="flex justify-between">
             <span class="font-bold">
                 {session.date}
+                {#if session.startTime}<span class="ml-2 text-sm font-normal text-muted-foreground">{session.startTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>{/if}
             </span>
             <span class="text-muted-foreground text-sm">
                 {formatDuration(session.duration)}
@@ -31,7 +32,7 @@
             <div class="flex justify-between items-center">
                 <div>
                     <span>{key + 1}.</span>
-                    <span class="text-base">{exercise.name}</span>
+                    <span class="text-base">{entry.exerciseName ?? exercise?.name ?? "Unknown exercise"}</span>
                 </div>
                 <MetricDisplay metric={entry.metric} size="lg" />
             </div>

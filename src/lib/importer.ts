@@ -185,46 +185,53 @@ export function parseImportText(
     return sessions;
 }
 
-export function importText(text: string): ImportResult {
+export async function importText(text: string): Promise<ImportResult> {
     const sessions = parseImportText(text);
     let sessionsAdded = 0;
     let exercisesAdded = 0;
 
-    for (const s of sessions) {
-        const entries: ExerciseEntry[] = [];
-        for (const ex of s.exercises) {
-            let exercise = exerciseManager.exercises.find(
-                (e) => e.name.toLowerCase() === ex.name.toLowerCase(),
-            );
-            if (!exercise) {
-                exercise = {
-                    id: uuidv4(),
-                    name: ex.name,
-                    note: ex.note,
-                    metricType: ex.metricType,
-                };
-                exerciseManager.exercises.push(exercise);
-                exercisesAdded++;
-            } else if (exercise.metricType !== ex.metricType) {
-                exercise.metricType = ex.metricType;
+    try {
+        for (const s of sessions) {
+            const entries: ExerciseEntry[] = [];
+            for (const ex of s.exercises) {
+                const valid = exerciseManager.validateEntry(ex.name, ex.metric);
+                if (!valid.success) throw new Error(`${ex.name}: ${valid.message}`);
+                let exercise = exerciseManager.exercises.find(
+                    (e) => e.name.toLowerCase() === ex.name.toLowerCase(),
+                );
+                if (!exercise) {
+                    exercise = {
+                        id: uuidv4(),
+                        name: ex.name,
+                        note: ex.note,
+                        metricType: ex.metricType,
+                    };
+                    const result = await exerciseManager.addExercise(exercise);
+                    if (!result.success) throw new Error(result.message);
+                    exercisesAdded++;
+                } else if (exercise.metricType !== ex.metricType) {
+                    const result = await exerciseManager.updateExercise({ ...exercise, metricType: ex.metricType });
+                    if (!result.success) throw new Error(result.message);
+                }
+                const entry = exerciseManager.createEntry(exercise.id, ex.metric);
+                if (!entry.success) throw new Error(entry.message);
+                entries.push(entry.data);
             }
-            const entry = exerciseManager.createEntry(exercise.id, ex.metric);
-            if (entry.success) entries.push(entry.data);
+            if (entries.length === 0) continue;
+
+            const session: Session = {
+                id: uuidv4(),
+                duration: s.duration,
+                exercises: entries,
+                routineId: "custom",
+                date: s.date,
+            };
+            const result = await sessionManager.addSession(session);
+            if (!result.success) throw new Error(result.message);
+            sessionsAdded++;
         }
-        if (entries.length === 0) continue;
-
-        const session: Session = {
-            id: uuidv4(),
-            duration: s.duration,
-            exercises: entries,
-            routineId: "custom",
-            date: s.date,
-        };
-        const result = sessionManager.addSession(session);
-        if (result.success) sessionsAdded++;
+    } catch (error) {
+        throw new Error(`Import stopped after saving ${sessionsAdded} session(s) and ${exercisesAdded} exercise(s). ${error instanceof Error ? error.message : "Could not save."} Check the saved data before importing again to avoid duplicates.`);
     }
-
-    exerciseManager.updateData();
-    sessionManager.updateData();
     return { sessionsAdded, exercisesAdded };
 }

@@ -19,12 +19,12 @@
     import Field from "./Field.svelte";
     import MetricDisplay from "./MetricDisplay.svelte";
     import { sessionManager } from "$lib/Session.svelte";
-    import { routineManager } from "$lib/Routine.svelte";
+    import { cloud } from "$lib/cloud.svelte";
 
     let {
         exercises = $bindable(),
-        routineId = $bindable(),
-    }: { exercises: ExerciseEntry[]; routineId?: string } = $props();
+        readonly = false,
+    }: { exercises: ExerciseEntry[]; readonly?: boolean } = $props();
     let metric = $state<ExerciseMetric>(createMetric("weight"));
     let exerciseId = $state("");
 
@@ -35,26 +35,15 @@
     let showCreateExercise = $state(false);
     let newExercise = $state<Exercise>(exerciseManager.createDefaultExercise());
 
-    function persistChanges() {
-        if (routineId) {
-            const routine = routineManager.getById(routineId);
-            if (routine) {
-                routine.exercises = exercises;
-                routineManager.updateRoutine(routine);
-            }
-        }
-    }
-
     function deleteItems() {
         exercises = exercises.filter((e) => !selectedRows.includes(e.id));
         selectedRows = [];
-        persistChanges();
     }
 
     function editItem() {
         const selected = exercises.find((e) => e.id == selectedRows[0])!;
         exerciseId = selected.exerciseId;
-        metric = selected.metric;
+        metric = { ...selected.metric };
         showAdd = true;
     }
 
@@ -102,10 +91,11 @@
         showCreateExercise = true;
     }
 
-    function saveNewExercise() {
-        exerciseManager.addExercise({ ...newExercise });
+    async function saveNewExercise() {
+        const result = await exerciseManager.addExercise({ ...newExercise });
+        if (!result.success) { alert(result.message); return; }
         exerciseId = newExercise.id;
-        onExerciseChanged(exerciseId);
+        metric = createMetric(newExercise.metricType);
         showCreateExercise = false;
         showAdd = true;
     }
@@ -156,20 +146,21 @@
             >
                 <Card.Content class="flex justify-between items-center">
                     <div class="space-y-2">
-                        <p class="font-bold">{exercise.name}</p>
+                        <p class="font-bold">{e.exerciseName ?? exercise?.name ?? "Unknown exercise"}</p>
                         <div class="flex gap-2 items-center">
                             <MetricDisplay metric={e.metric} />
                         </div>
                     </div>
                     <!-- TAG -->
                     <MetricTypeTag
-                        metric={METRICS[exercise.metricType]}
+                        metric={METRICS[e.metric.type]}
                         size="sm"
                     />
                 </Card.Content>
             </Card.Root>
         </div>
     {/each}
+    {#if !readonly}
     <div class="flex justify-between items-center mt-3">
         <div>
             {#if showEdit}
@@ -209,11 +200,12 @@
             </Button>
         </div>
     </div>
+    {/if}
 </div>
 
 <Sheet.Root bind:open={showAdd}>
     <!-- Add Buttton -->
-    <Sheet.Content side="bottom" class="min-h-150 p-4" showCloseButton={false}>
+    <Sheet.Content side="bottom" class="min-h-150 p-4" showCloseButton={false} inert={cloud.saving || cloud.needsReload || cloud.loading}>
         <Sheet.Header class="flex justify-between items-center">
             <Sheet.Title>{showEdit ? "Edit" : "Add"} Exercise</Sheet.Title>
             <Button
@@ -278,11 +270,12 @@
                         const index = exercises.findIndex(
                             (e) => e.id == selectedRows[0],
                         );
-                        exercises[index] = result.data;
+                        // Metric edits retain entry identity and historical name snapshots.
+                        exercises[index] = { ...exercises[index], exerciseId: result.data.exerciseId, metric: result.data.metric,
+                            ...(exercises[index].exerciseId !== result.data.exerciseId ? { exerciseName: undefined, avgDuration: undefined } : {}) };
                     } else {
                         exercises.push({ ...result.data });
                     }
-                    persistChanges();
                     showAdd = false;
                     showEdit = false;
                 } else alert(result.message);
@@ -292,7 +285,7 @@
 </Sheet.Root>
 
 <Sheet.Root bind:open={showCreateExercise}>
-    <Sheet.Content side="bottom" class="min-h-150 p-4" showCloseButton={false}>
+    <Sheet.Content side="bottom" class="min-h-150 p-4" showCloseButton={false} inert={cloud.saving || cloud.needsReload || cloud.loading}>
         <Sheet.Header class="flex justify-between items-center">
             <Sheet.Title>Create New Exercise</Sheet.Title>
             <Button

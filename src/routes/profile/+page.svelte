@@ -1,13 +1,53 @@
 <script lang="ts">
     import { Button } from "$lib/components/ui/button/index.js";
     import { goto } from "$app/navigation";
-    import ConfirmDialog from "$lib/components/ConfirmDialog.svelte";
     import BackBtn from "$lib/components/BackBtn.svelte";
+    import { page } from "$app/state";
+    import { getSupabase } from "$lib/supabase";
+    import { cloud } from "$lib/cloud.svelte";
+    import { STORAGE_KEYS } from "$lib/constants";
+    import { onMount } from "svelte";
+
+    let signingOut = $state(false);
+    let error = $state("");
+    let hasLegacyData = $state(false);
+    onMount(() => {
+        try { hasLegacyData = Object.values(STORAGE_KEYS).some((key) => localStorage.getItem(key) !== null); }
+        catch { /* Browser storage may be disabled; cloud storage still works. */ }
+    });
+    function download(value: unknown, name: string) {
+        const url = URL.createObjectURL(new Blob([JSON.stringify(value, null, 2)], { type: "application/json" }));
+        const anchor = document.createElement("a");
+        anchor.href = url; anchor.download = name;
+        document.body.append(anchor); anchor.click(); anchor.remove();
+        URL.revokeObjectURL(url);
+    }
+    function exportCloud() {
+        download({ version: 1, exportedAt: new Date().toISOString(), ...$state.snapshot(cloud.data) }, "gym-logger-backup.json");
+    }
+    function exportLegacy() {
+        try {
+            const data = Object.fromEntries(Object.entries(STORAGE_KEYS).map(([name, key]) => [name, JSON.parse(localStorage.getItem(key) ?? "null")]));
+            download({ version: "legacy-local", ...data }, "gym-logger-local-backup.json");
+        } catch { error = "Could not read the existing browser backup. No data was changed."; }
+    }
+    async function signOut() {
+        if (signingOut) return;
+        signingOut = true; error = "";
+        try {
+            const { error: failure } = await getSupabase().auth.signOut({ scope: "local" });
+            if (failure) throw failure;
+            cloud.clear();
+            await goto("/sign-in", { invalidateAll: true });
+        } catch (failure) { error = failure instanceof Error ? failure.message : "Could not sign out."; }
+        finally { signingOut = false; }
+    }
 </script>
 
 <header>
     <BackBtn />
     <h1>Profile</h1>
+    <p class="text-muted-foreground">{page.data.user?.email}</p>
 </header>
 
 <section class="space-y-3">
@@ -19,19 +59,18 @@
     >
         Import Data
     </Button>
-    <Button onclick={() => {}} variant={"secondary"}>Export Data</Button>
+    <Button onclick={exportCloud} variant={"secondary"}>Export Cloud Data</Button>
+    <Button href="/reset-password" variant="outline">Change Password</Button>
+    {#if hasLegacyData}
+        <div class="rounded-xl border p-4 space-y-3">
+            <p class="text-sm text-muted-foreground">Previous workout data is still in this browser. It has not been uploaded or deleted. Download a backup for your later migration.</p>
+            <Button onclick={exportLegacy} variant="outline">Download Previous Browser Data</Button>
+        </div>
+    {/if}
 </section>
 
 <section>
     <hr />
-    <ConfirmDialog
-        onconfirm={() => {
-            localStorage.clear();
-            location.reload();
-        }}
-    >
-        {#snippet trigger()}
-            Delete Data
-        {/snippet}
-    </ConfirmDialog>
+    {#if error}<p role="alert" class="text-destructive">{error}</p>{/if}
+    <Button onclick={signOut} variant="outline" disabled={signingOut}>{signingOut ? "Signing out…" : "Sign out"}</Button>
 </section>
