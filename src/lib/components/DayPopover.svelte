@@ -6,7 +6,7 @@
     import { exerciseManager } from "$lib/Exercise.svelte";
     import MetricDisplay from "./MetricDisplay.svelte";
 
-    let { date, selectedDate = $bindable(), selectedSession } = $props();
+    let { date, selectedDate = $bindable(), selectedSessions } = $props();
 </script>
 
 <Popover.Root>
@@ -23,7 +23,7 @@
         <p class="font-extrabold text-lg">
             Sessions on {selectedDate}
         </p>
-        {#if selectedSession}
+        {#each selectedSessions as selectedSession (selectedSession.id)}
             <div class="space-y-3">
                 <p class="text-muted-foreground">
                     {formatDuration(selectedSession.duration)}
@@ -46,6 +46,6 @@
             </div>
         {:else}
             <p>No sessions logged</p>
-        {/if}
+        {/each}
     </Popover.Content>
 </Popover.Root>

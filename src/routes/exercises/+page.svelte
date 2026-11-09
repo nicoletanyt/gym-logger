@@ -49,7 +49,6 @@
 
     function deleteSelected() {
         exerciseManager.removeExercises(selectedIds);
-        sessionManager.removeExerciseEntries(selectedIds);
         routineManager.removeExerciseEntries(selectedIds);
         toggleEdit();
     }
@@ -102,7 +101,7 @@
         {#if selectedIds.length > 0}
             <ConfirmDialog
                 title="Delete Exercises?"
-                description={`This will permanently delete ${selectedIds.length} exercise${selectedIds.length == 1 ? "" : "s"} and all related data, including every entry of it in your sessions and routines.`}
+                description={`This will remove ${selectedIds.length} exercise${selectedIds.length == 1 ? "" : "s"} from your exercises and routines. Your workout history will be kept.`}
                 onconfirm={deleteSelected}
                 buttonVar="destructive"
             >

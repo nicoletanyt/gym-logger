@@ -14,24 +14,27 @@ export interface Session {
     routineId: string;
     date: string;
     startTime?: Date;
+    createdAt?: string;
+    effort?: number;
 }
 
-export const DEFAULT_SESSION: Session = {
-    id: uuidv4(),
-    duration: 0,
-    exercises: [],
-    routineId: "custom",
-    date: new Date().toISOString().split("T")[0],
-};
+export function createDefaultSession(): Session {
+    const now = new Date();
+    const date = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    return { id: uuidv4(), duration: 0, exercises: [], routineId: "custom", date, createdAt: now.toISOString() };
+}
 
 class SessionManager {
-    sessions = $state<Record<string, Session>>({}); // date: session
-    activeSession = $state<Session>(DEFAULT_SESSION);
+    sessions = $state<Record<string, Session>>({}); // session ID: session
+    activeSession = $state<Session>(createDefaultSession());
 
     loadData() {
-        this.sessions = JSON.parse(
+        const stored: Record<string, Session> = JSON.parse(
             localStorage.getItem(STORAGE_KEYS.sessions) ?? "{}",
         );
+        // Older versions keyed sessions by date. Keep the original local data
+        // untouched until the next explicit save.
+        this.sessions = Object.fromEntries(Object.values(stored).map((session) => [session.id, session]));
     }
     updateData() {
         localStorage.setItem(
@@ -40,13 +43,13 @@ class SessionManager {
         );
     }
     getLatestExercise(exerciseId: string): ExerciseMetric {
-        const latestSession = Object.entries(this.sessions)
-            .filter(([_, session]) =>
+        const latestSession = Object.values(this.sessions)
+            .filter((session) =>
                 session.exercises.some(
                     (exercise) => exercise.exerciseId == exerciseId,
                 ),
             )
-            .sort(([dateA], [dateB]) => dateB.localeCompare(dateA))[0]?.[1];
+            .sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt ?? "").localeCompare(a.createdAt ?? ""))[0];
 
         if (latestSession === undefined) {
             const exercise = exerciseManager.getById(exerciseId);
@@ -101,13 +104,13 @@ class SessionManager {
                 message: "duration needs to be > 0 mins...",
             };
 
-        this.sessions[newSession.date] = newSession;
+        this.sessions[newSession.id] = { ...newSession, createdAt: newSession.createdAt ?? new Date().toISOString() };
         this.updateData();
         return { success: true };
     }
     addActiveSession() {
         const result = this.addSession(this.activeSession);
-        this.activeSession = DEFAULT_SESSION;
+        if (result.success) this.activeSession = createDefaultSession();
         return result;
     }
 
@@ -136,8 +139,8 @@ class SessionManager {
         this.updateData();
     }
 
-    deleteSession(date: string) {
-        delete this.sessions[date];
+    deleteSession(id: string) {
+        delete this.sessions[id];
         this.updateData();
     }
 
@@ -174,14 +177,13 @@ class SessionManager {
         const todayDate = new Date();
         todayDate.setHours(0, 0, 0, 0);
 
-        const sessionDates = new Set<string>(
-            sessions.map((s) => new Date(s.date).toDateString()),
-        );
+        const sessionDates = new Set(sessions.map((s) => s.date));
 
         let streak = 0;
         let checkDate = new Date(todayDate);
 
-        while (sessionDates.has(checkDate.toDateString())) {
+        const localDate = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+        while (sessionDates.has(localDate(checkDate))) {
             streak++;
             checkDate = new Date(checkDate);
             checkDate.setDate(checkDate.getDate() - 1);
@@ -191,16 +193,16 @@ class SessionManager {
     }
     calculateWorkoutsThisWeek(): number {
         const now = new Date();
-        const startOfWeek = new Date(
-            now.setDate(now.getDate() - now.getDay() + 1),
-        );
+        const startOfWeek = new Date(now);
+        startOfWeek.setDate(now.getDate() - ((now.getDay() + 6) % 7));
         startOfWeek.setHours(0, 0, 0, 0);
 
         let count = 0;
         Object.values(this.sessions).forEach((session) => {
-            const sessionDate = new Date(session.date);
-            sessionDate.setHours(0, 0, 0, 0);
-            if (sessionDate >= startOfWeek) {
+            const sessionDate = new Date(`${session.date}T00:00:00`);
+            const endOfWeek = new Date(startOfWeek);
+            endOfWeek.setDate(endOfWeek.getDate() + 7);
+            if (sessionDate >= startOfWeek && sessionDate < endOfWeek) {
                 count++;
             }
         });
@@ -209,16 +211,26 @@ class SessionManager {
 
     // for calendar
     getMaxDuration(): number {
-        const durations = Object.values(this.sessions).map((s) => s.duration);
+        const durations = this.getDailyDurations();
         return durations.length > 0 ? Math.max(...durations) : 0;
     }
     getMinDuration(): number {
-        const durations = Object.values(this.sessions).map((s) => s.duration);
+        const durations = this.getDailyDurations();
         return durations.length > 0 ? Math.min(...durations) : 0;
     }
-    getLevel(date: number): number {
-        const duration =
-            sessionManager.sessions[date.toString()]?.duration ?? 0;
+    getSessionsForDate(date: string): Session[] {
+        return Object.values(this.sessions).filter((s) => s.date === date)
+            .sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""));
+    }
+    getDailyDurations(): number[] {
+        const totals = new Map<string, number>();
+        for (const session of Object.values(this.sessions)) {
+            totals.set(session.date, (totals.get(session.date) ?? 0) + session.duration);
+        }
+        return [...totals.values()];
+    }
+    getLevel(date: string): number {
+        const duration = this.getSessionsForDate(date).reduce((total, session) => total + session.duration, 0);
         if (duration == 0) return 0;
 
         const minDuration = this.getMinDuration();

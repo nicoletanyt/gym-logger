@@ -20,7 +20,7 @@
     }
 
     function deleteSession() {
-        sessionManager.deleteSession(session.date);
+        sessionManager.deleteSession(session.id);
         goto("/sessions");
     }
 </script>
@@ -70,4 +70,3 @@
 <section>
     <ExerciseManager bind:exercises={session.exercises} />
 </section>
-

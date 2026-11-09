@@ -38,7 +38,6 @@
 
     function deleteExercise() {
         exerciseManager.removeExercises([id]);
-        sessionManager.removeExerciseEntries([id]);
         routineManager.removeExerciseEntries([id]);
         goto("/exercises");
     }
@@ -191,7 +190,7 @@
         <div class="space-x-3">
             <ConfirmDialog
                 title="Delete Exercise?"
-                description={`This will permanently delete "${exercise.name}" and all related data, including every entry of it in your sessions and routines.`}
+                description={`This will remove "${exercise.name}" from your exercises and routines. Your workout history will be kept.`}
                 onconfirm={deleteExercise}
                 buttonVar="destructive"
             >

@@ -45,9 +45,7 @@
     });
 
     let selectedDate = $state<string>("");
-    let selectedSession = $derived(
-        sessionManager.sessions[selectedDate] ?? null,
-    );
+    let selectedSessions = $derived(sessionManager.getSessionsForDate(selectedDate));
 </script>
 
 <!--
@@ -121,7 +119,7 @@ get along, so we shut typescript up by casting `value` to `never`.
                                                 <DayPopover
                                                     {date}
                                                     bind:selectedDate
-                                                    {selectedSession}
+                                                    {selectedSessions}
                                                 />
                                             {/if}
                                         </Calendar.Cell>

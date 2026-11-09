@@ -8,12 +8,14 @@
     import { exerciseManager } from "$lib/Exercise.svelte";
 
     let { children } = $props();
+    let loaded = $state(false);
 
     onMount(() => {
         // init managers
         sessionManager.loadData();
         routineManager.loadData();
         exerciseManager.loadData();
+        loaded = true;
     });
 </script>
 
@@ -23,7 +25,11 @@
 
 <div class="box-border flex flex-col h-dvh w-full p-10 pb-22">
     <main class="box-border min-h-0 min-w-0 flex-1 relative overflow-auto p-1">
-        {@render children()}
+        {#if loaded}
+            {@render children()}
+        {:else}
+            <p>Loading your workouts…</p>
+        {/if}
     </main>
 </div>
 <NavBar />

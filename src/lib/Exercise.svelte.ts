@@ -42,6 +42,7 @@ export interface Exercise {
     imageLink?: string; // TODO:
     note?: string;
     metricType: MetricType;
+    archived?: boolean;
 }
 
 // eg weight lifting
@@ -75,6 +76,7 @@ export interface ExerciseEntry {
     id: string;
     exerciseId: string;
     metric: ExerciseMetric;
+    avgDuration?: number;
 }
 
 export const UNITS = {
@@ -87,16 +89,19 @@ export const UNITS = {
 
 class ExerciseManager {
     exercises = $state<Exercise[]>([]);
+    archivedExercises = $state<Exercise[]>([]);
 
     loadData() {
-        this.exercises = JSON.parse(
+        const stored: Exercise[] = JSON.parse(
             localStorage.getItem(STORAGE_KEYS.exercises) ?? "[]",
         );
+        this.exercises = stored.filter((exercise) => !exercise.archived);
+        this.archivedExercises = stored.filter((exercise) => exercise.archived);
     }
     updateData() {
         localStorage.setItem(
             STORAGE_KEYS.exercises,
-            JSON.stringify(this.exercises),
+            JSON.stringify([...this.exercises, ...this.archivedExercises]),
         );
     }
 
@@ -142,7 +147,7 @@ class ExerciseManager {
         };
     }
     getById(id: string): Exercise {
-        return this.exercises.find((e) => e.id == id)!;
+        return [...this.exercises, ...this.archivedExercises].find((e) => e.id == id)!;
     }
     addExercise(newExercise: Exercise) {
         // TODO: validation (for img)
@@ -150,6 +155,7 @@ class ExerciseManager {
         this.updateData();
     }
     removeExercises(ids: string[]) {
+        this.archivedExercises.push(...this.exercises.filter((e) => ids.includes(e.id)).map((e) => ({ ...e, archived: true })));
         this.exercises = this.exercises.filter((e) => !ids.includes(e.id));
         this.updateData();
     }

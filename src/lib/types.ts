@@ -1,4 +1,4 @@
-import type { Exercise } from "./Exercise.svelte";
+import type { ExerciseEntry } from "./Exercise.svelte";
 
 export interface Group {
     id: string;
@@ -7,7 +7,7 @@ export interface Group {
 }
 
 export interface ActiveExercise {
-    exercise: Exercise;
+    exercise: ExerciseEntry;
     currentSet: number;
     durations: number[];
     prevStart: Date;

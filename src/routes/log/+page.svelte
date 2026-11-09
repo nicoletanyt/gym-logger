@@ -4,7 +4,7 @@
     import { goto } from "$app/navigation";
     import BackBtn from "$lib/components/BackBtn.svelte";
     import {
-        DEFAULT_SESSION,
+        createDefaultSession,
         type Session,
         sessionManager,
     } from "$lib/Session.svelte";
@@ -12,11 +12,13 @@
     import ActionButton from "$lib/components/ActionButton.svelte";
     import ExerciseManager from "$lib/components/ExerciseManager.svelte";
     import Field from "$lib/components/Field.svelte";
+    import { untrack } from "svelte";
 
-    let newSession = $state<Session>(DEFAULT_SESSION);
+    let newSession = $state<Session>(createDefaultSession());
 
     $effect(() => {
-        sessionManager.applyRoutine(newSession);
+        newSession.routineId;
+        untrack(() => sessionManager.applyRoutine(newSession));
     });
 </script>
 

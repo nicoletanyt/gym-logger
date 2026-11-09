@@ -9,15 +9,15 @@
     import ConfirmDialog from "$lib/components/ConfirmDialog.svelte";
     import { goto } from "$app/navigation";
     import {
-        DEFAULT_SESSION,
         sessionManager,
         type Session,
     } from "$lib/Session.svelte";
     import Combobox from "$lib/components/ui/combobox/combobox.svelte";
     import { routineManager } from "$lib/Routine.svelte";
     import { formatDuration } from "$lib/constants";
+    import { exerciseManager } from "$lib/Exercise.svelte";
+    import { untrack } from "svelte";
 
-    // let sessionManager.activeSession = $state<Session>(DEFAULT_SESSION);
     let isOngoing = $state(false);
     let activeExercises = $state<ActiveExercise[]>([]);
 
@@ -25,7 +25,7 @@
 
     let isAllDone = $derived(
         activeExercises.every(
-            (item: ActiveExercise) => item.currentSet == item.exercise.sets,
+            (item: ActiveExercise) => item.currentSet == item.exercise.metric.sets,
         ),
     );
 
@@ -66,7 +66,7 @@
                 activeExercises[i].durations.reduce(
                     (sum, current) => sum + current,
                     0,
-                ) / activeExercises[i].durations.length;
+                ) / (activeExercises[i].durations.length || 1);
         }
 
         goto("/sessions/summary");
@@ -79,7 +79,8 @@
     }
 
     $effect(() => {
-        sessionManager.applyRoutine(sessionManager.activeSession);
+        sessionManager.activeSession.routineId;
+        untrack(() => sessionManager.applyRoutine(sessionManager.activeSession));
     });
 </script>
 
@@ -129,11 +130,11 @@
 {:else}
     <section class="space-y-8">
         {#each activeExercises as item}
-            {@const id = `${item.exercise.name}|${item.currentSet}`}
+            {@const id = `${item.exercise.id}|${item.currentSet}`}
             <div class="space-y-3">
-                <div class="font-bold">{item.exercise.name}</div>
+                <div class="font-bold">{exerciseManager.getById(item.exercise.exerciseId).name}</div>
                 <div class="space-y-2">
-                    {#each Array.from( { length: Math.min(item.currentSet + 1, item.exercise.sets ?? 0) }, ) as _, i}
+                    {#each Array.from( { length: Math.min(item.currentSet + 1, item.exercise.metric.sets) }, ) as _, i}
                         {@const checked = i < item.currentSet}
                         {@const worse = Math.max(...item.durations)}
                         {@const best = Math.min(...item.durations)}
@@ -159,7 +160,7 @@
                                 <Label
                                     for={id}
                                     class={`font-normal text-base ${checked ? "line-through" : ""}`}
-                                    >Set {i + 1} - x{item.exercise.reps}
+                                    >Set {i + 1}{"reps" in item.exercise.metric ? ` - x${item.exercise.metric.reps}` : ""}
                                 </Label>
                             </div>
                             <!-- Time Label -->

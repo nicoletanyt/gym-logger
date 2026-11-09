@@ -16,7 +16,7 @@
         Object.values(sessionManager.sessions).sort((a, b) => {
             const comparison =
                 sortBy == "date"
-                    ? a.date.localeCompare(b.date)
+                    ? a.date.localeCompare(b.date) || (a.createdAt ?? "").localeCompare(b.createdAt ?? "")
                     : a.duration - b.duration;
             return sortDirection == "asc" ? comparison : -comparison;
         }),
@@ -75,11 +75,11 @@
 </header>
 
 <div class="grid gap-6">
-    {#each sortedSessions as session (session.date)}
+    {#each sortedSessions as session (session.id)}
         <SessionCard
             {session}
             onclick={() => {
-                goto(`/sessions/${session.date}`);
+                goto(`/sessions/${session.id}`);
             }}
         />
     {:else}
