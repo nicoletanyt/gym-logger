@@ -14,17 +14,9 @@
     const gifSource =
         GIFS["happy"][Math.floor(Math.random() * GIFS["happy"].length)];
 
-    function addSession() {
-        // TODO: sessionManager.activeSession.effort
-        const result = sessionManager.addSession(sessionManager.activeSession);
-
-        alert(result.success ? "Session Added!" : result.message);
-        if (result.success) goto("/");
-    }
-
     const chartData = $derived([
         ...sessionManager.activeSession.exercises.map((e) => ({
-            exercise: exerciseManager.getById(e.exerciseId).name,
+            exercise: exerciseManager.getById(e.exerciseId)?.name ?? "Unknown exercise",
             avg: e.avgDuration ?? 0,
         })),
     ]);
@@ -77,6 +69,7 @@
     <h2>Exercises</h2>
     <ExerciseManager
         bind:exercises={sessionManager.activeSession.exercises}
+        readonly
     />
 </section>
 
@@ -107,8 +100,8 @@
     <Button
         variant="secondary"
         class="bg-green-300"
-        onclick={() => {
-            const result = sessionManager.addActiveSession();
+        onclick={async () => {
+            const result = await sessionManager.addActiveSession();
 
             alert(result.success ? "Session Added!" : result.message);
             if (result.success) goto("/");

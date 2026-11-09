@@ -3,7 +3,7 @@
     import SessionCard from "$lib/components/SessionCard.svelte";
     import Button from "$lib/components/ui/button/button.svelte";
     import * as Popover from "$lib/components/ui/popover/index.js";
-    import { sessionManager } from "$lib/Session.svelte";
+    import { sessionManager, compareSessions } from "$lib/Session.svelte";
     import { ArrowDown, ArrowUp, ListFilter } from "@lucide/svelte";
 
     const sortOptions = [
@@ -16,7 +16,7 @@
         Object.values(sessionManager.sessions).sort((a, b) => {
             const comparison =
                 sortBy == "date"
-                    ? a.date.localeCompare(b.date) || (a.createdAt ?? "").localeCompare(b.createdAt ?? "")
+                    ? -compareSessions(a, b)
                     : a.duration - b.duration;
             return sortDirection == "asc" ? comparison : -comparison;
         }),

@@ -59,10 +59,10 @@
     <ActionButton
         text="Add Session"
         className="static inset-auto my-0 w-full shrink-0"
-        onclick={() => {
-            const result = sessionManager.addSession({
+        onclick={async () => {
+            const result = await sessionManager.addSession({
                 ...newSession,
-                duration: newSession.duration * 60,
+                duration: Math.round(newSession.duration * 60),
             });
 
             alert(result.success ? "Session Added!" : result.message);

@@ -8,21 +8,45 @@
     import BackBtn from "$lib/components/BackBtn.svelte";
     import { routineManager } from "$lib/Routine.svelte";
     import Input from "$lib/components/ui/input/input.svelte";
+    import { untrack } from "svelte";
+    import type { Routine } from "$lib/Routine.svelte";
+    import { cloud } from "$lib/cloud.svelte";
 
-    const id = page.params.id ?? "";
-    const routine = $state($state.snapshot(routineManager.getById(id)!));
+    const id = $derived(page.params.id ?? "");
+    let routine = $state<Routine | undefined>();
     let isEdit = $state(false);
+    $effect(() => {
+        const routeId = id;
+        untrack(() => {
+            const original = routineManager.getById(routeId);
+            routine = original ? structuredClone($state.snapshot(original)) : undefined;
+            isEdit = false;
+        });
+    });
 
-    function deleteRoutine() {
-        routineManager.deleteRoutine(id);
-        goto("/routines");
+    async function deleteRoutine() {
+        if (!routine) return;
+        const result = await routineManager.deleteRoutine(id, routine.revision);
+        if (result.success) goto("/routines");
+        else alert(result.message);
     }
 
-    function updateRoutine() {
-        routineManager.updateRoutine(routine);
+    async function toggleEdit() {
+        if (!routine) return;
+        if (!isEdit) {
+            const latest = routineManager.getById(id);
+            routine = latest ? structuredClone($state.snapshot(latest)) : undefined;
+            isEdit = Boolean(routine); return;
+        }
+        const result = await routineManager.updateRoutine(routine);
+        if (result.success) {
+            if (!cloud.needsReload) routine = structuredClone($state.snapshot(routineManager.getById(id)));
+            isEdit = false;
+        } else alert(result.message);
     }
 </script>
 
+{#if routine}
 <header>
     <div class="flex justify-between">
         <BackBtn dest={"/routines"} />
@@ -34,10 +58,7 @@
             </ConfirmDialog>
             <Button
                 variant={"outline"}
-                onclick={() => {
-                    isEdit = !isEdit;
-                    if (!isEdit) updateRoutine();
-                }}
+                onclick={toggleEdit}
             >
                 {#if isEdit}
                     <Check />
@@ -55,8 +76,11 @@
 </header>
 
 <section>
-    <ExerciseManager bind:exercises={routine.exercises} routineId={id} />
+    <ExerciseManager bind:exercises={routine.exercises} readonly={!isEdit} />
 </section>
+{:else}
+    <BackBtn dest="/routines" /><h1>Routine not found</h1><p>This routine may have been deleted or belongs to another account.</p>
+{/if}
 
 <!-- TODO: -->
 <!-- <section> -->

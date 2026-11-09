@@ -12,19 +12,22 @@
     let errorMsg = $state("");
     let showError = $state(false);
     let desc = $state("");
+    let busy = $state(false);
 
     function plural(n: number, word: string): string {
         return `${n} ${word}${n == 1 ? "" : "s"}`;
     }
 
-    function handleImport() {
+    async function handleImport() {
+        if (busy) return;
         if (!text.trim()) {
             errorMsg = "Paste some session data first.";
             showError = true;
             return;
         }
+        busy = true;
         try {
-            result = importText(text);
+            result = await importText(text);
             if (result.sessionsAdded === 0) {
                 errorMsg =
                     "No sessions were imported. Make sure each session starts with a date like 9/8.";
@@ -40,7 +43,7 @@
         } catch (err) {
             errorMsg = (err as Error).message;
             showError = true;
-        }
+        } finally { busy = false; }
     }
 </script>
 
@@ -65,10 +68,11 @@
         class="mt-2 flex-1 min-h-0"
         style="field-sizing: fixed"
         bind:value={text}
+        disabled={busy}
         placeholder={"e.g.\n9/8 bicep curls machine 7kg x10, 3 sets\nduration: 43mins"}
     />
-    <Button variant="success" class="w-full mt-3" onclick={handleImport}>
-        Import
+    <Button variant="success" class="w-full mt-3" onclick={handleImport} disabled={busy}>
+        {busy ? "Importing to Supabase…" : "Import"}
     </Button>
 </div>
 

@@ -15,8 +15,7 @@
         buttonVariants,
     } from "$lib/components/ui/button/button.svelte";
     import ConfirmDialog from "$lib/components/ConfirmDialog.svelte";
-    import { sessionManager } from "$lib/Session.svelte";
-    import { routineManager } from "$lib/Routine.svelte";
+    import { cloud } from "$lib/cloud.svelte";
     import { cn } from "$lib/utils";
     import { Check, Trash, X, Pencil } from "@lucide/svelte";
 
@@ -47,10 +46,10 @@
         selectedIds = [];
     }
 
-    function deleteSelected() {
-        exerciseManager.removeExercises(selectedIds);
-        routineManager.removeExerciseEntries(selectedIds);
-        toggleEdit();
+    async function deleteSelected() {
+        const result = await exerciseManager.removeExercises(selectedIds);
+        if (result.success) toggleEdit();
+        else alert(result.message);
     }
 </script>
 
@@ -128,7 +127,7 @@
 
 <Sheet.Root bind:open={showAdd}>
     <!-- Add Buttton -->
-    <Sheet.Content side="bottom" class="min-h-150 p-4" showCloseButton={false}>
+    <Sheet.Content side="bottom" class="min-h-150 p-4" showCloseButton={false} inert={cloud.saving || cloud.needsReload || cloud.loading}>
         <Sheet.Header class="flex justify-between">
             <Sheet.Title>Create New Exercise</Sheet.Title>
             <Button
@@ -167,10 +166,12 @@
         <ActionButton
             text="Add Exercise"
             onOverlay={true}
-            onclick={() => {
-                exerciseManager.addExercise(newExercise);
-                exerciseManager.updateData();
-                showAdd = false;
+            onclick={async () => {
+                const result = await exerciseManager.addExercise(newExercise);
+                if (result.success) {
+                    showAdd = false;
+                    newExercise = exerciseManager.createDefaultExercise();
+                } else alert(result.message);
             }}
         />
     </Sheet.Content>

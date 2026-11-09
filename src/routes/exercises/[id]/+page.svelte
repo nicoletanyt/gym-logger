@@ -19,27 +19,30 @@
         type Weight,
     } from "$lib/Exercise.svelte";
     import { sessionManager } from "$lib/Session.svelte";
-    import { routineManager } from "$lib/Routine.svelte";
 
     const id = $derived(page.params.id ?? "");
     const exercise = $derived(exerciseManager.getById(id));
 
     let isEdit = $state(false);
     let draftName = $state("");
+    let editRevision = $state<number | undefined>();
 
-    function toggleEdit() {
+    async function toggleEdit() {
+        if (!exercise) return;
         if (isEdit) {
-            exerciseManager.updateExercise({ ...exercise, name: draftName });
+            const result = await exerciseManager.updateExercise({ ...exercise, name: draftName, revision: editRevision });
+            if (!result.success) { alert(result.message); return; }
         } else {
             draftName = exercise.name;
+            editRevision = exercise.revision;
         }
         isEdit = !isEdit;
     }
 
-    function deleteExercise() {
-        exerciseManager.removeExercises([id]);
-        routineManager.removeExerciseEntries([id]);
-        goto("/exercises");
+    async function deleteExercise() {
+        const result = await exerciseManager.removeExercises([id]);
+        if (result.success) goto("/exercises");
+        else alert(result.message);
     }
 
     const sessionEntries = $derived(
@@ -57,7 +60,7 @@
     };
 
     const repsStats = $derived.by((): RepsStats | null => {
-        if (exercise.metricType != "reps") return null;
+        if (exercise?.metricType != "reps") return null;
         const list = sessionEntries
             .filter((e) => e.metric.type == "reps")
             .map((e) => ({ date: e.date, metric: e.metric as Reps }));
@@ -86,7 +89,7 @@
     };
 
     const durationStats = $derived.by((): DurationStats | null => {
-        if (exercise.metricType != "duration") return null;
+        if (exercise?.metricType != "duration") return null;
         const list = sessionEntries
             .filter((e) => e.metric.type == "duration")
             .map((e) => ({ date: e.date, metric: e.metric as Duration }));
@@ -112,7 +115,7 @@
     };
 
     const cardioStats = $derived.by((): CardioStats | null => {
-        if (exercise.metricType != "cardio") return null;
+        if (exercise?.metricType != "cardio") return null;
         const list = sessionEntries
             .filter((e) => e.metric.type == "cardio")
             .map((e) => ({ date: e.date, metric: e.metric as Cardio }));
@@ -146,7 +149,7 @@
     };
 
     const weightStats = $derived.by((): WeightStats | null => {
-        if (exercise.metricType != "weight") return null;
+        if (exercise?.metricType != "weight") return null;
         const list = sessionEntries
             .filter((e) => e.metric.type == "weight")
             .map((e) => ({ date: e.date, metric: e.metric as Weight }));
@@ -184,6 +187,7 @@
     }
 </script>
 
+{#if exercise}
 <header>
     <div class="flex justify-between">
         <BackBtn dest="/exercises" />
@@ -318,4 +322,7 @@
             format={formatKm}
         />
     </section>
+{/if}
+{:else}
+    <BackBtn dest="/exercises" /><h1>Exercise not found</h1><p>This exercise is unavailable in your account.</p>
 {/if}

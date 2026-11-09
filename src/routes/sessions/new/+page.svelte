@@ -132,7 +132,7 @@
         {#each activeExercises as item}
             {@const id = `${item.exercise.id}|${item.currentSet}`}
             <div class="space-y-3">
-                <div class="font-bold">{exerciseManager.getById(item.exercise.exerciseId).name}</div>
+                <div class="font-bold">{exerciseManager.getById(item.exercise.exerciseId)?.name ?? "Unknown exercise"}</div>
                 <div class="space-y-2">
                     {#each Array.from( { length: Math.min(item.currentSet + 1, item.exercise.metric.sets) }, ) as _, i}
                         {@const checked = i < item.currentSet}

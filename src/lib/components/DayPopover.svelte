@@ -36,7 +36,7 @@
                             entry.exerciseId,
                         )}
                         <p>
-                            {exercise.name}
+                             {entry.exerciseName ?? exercise?.name ?? "Unknown exercise"}
                         </p>
                         <MetricDisplay metric={entry.metric} size="lg" />
                     {:else}

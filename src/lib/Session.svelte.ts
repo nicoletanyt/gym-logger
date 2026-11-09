@@ -1,5 +1,7 @@
 import { v4 as uuidv4 } from "uuid";
-import { STORAGE_KEYS, type Result } from "./constants";
+import { type Result } from "./constants";
+import { cloud } from "./cloud.svelte";
+import { saveSession } from "./workout-repository";
 import { routineManager } from "./Routine.svelte";
 import {
     exerciseManager,
@@ -16,6 +18,8 @@ export interface Session {
     startTime?: Date;
     createdAt?: string;
     effort?: number;
+    revision?: number;
+    routineName?: string;
 }
 
 export function createDefaultSession(): Session {
@@ -25,23 +29,10 @@ export function createDefaultSession(): Session {
 }
 
 class SessionManager {
-    sessions = $state<Record<string, Session>>({}); // session ID: session
+    get sessions() { return cloud.data.sessions; }
     activeSession = $state<Session>(createDefaultSession());
 
-    loadData() {
-        const stored: Record<string, Session> = JSON.parse(
-            localStorage.getItem(STORAGE_KEYS.sessions) ?? "{}",
-        );
-        // Older versions keyed sessions by date. Keep the original local data
-        // untouched until the next explicit save.
-        this.sessions = Object.fromEntries(Object.values(stored).map((session) => [session.id, session]));
-    }
-    updateData() {
-        localStorage.setItem(
-            STORAGE_KEYS.sessions,
-            JSON.stringify(this.sessions),
-        );
-    }
+    resetActiveSession() { this.activeSession = createDefaultSession(); }
     getLatestExercise(exerciseId: string): ExerciseMetric {
         const latestSession = Object.values(this.sessions)
             .filter((session) =>
@@ -49,12 +40,12 @@ class SessionManager {
                     (exercise) => exercise.exerciseId == exerciseId,
                 ),
             )
-            .sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt ?? "").localeCompare(a.createdAt ?? ""))[0];
+            .sort(compareSessions)[0];
 
         if (latestSession === undefined) {
             const exercise = exerciseManager.getById(exerciseId);
 
-            switch (exercise.metricType) {
+            switch (exercise?.metricType ?? "weight") {
                 case "reps":
                     return {
                         sets: 0,
@@ -86,11 +77,10 @@ class SessionManager {
                     };
             }
         }
-        return latestSession.exercises.find((e) => e.exerciseId == exerciseId)!
-            .metric;
+        return { ...latestSession.exercises.find((e) => e.exerciseId == exerciseId)!.metric };
     }
 
-    addSession(newSession: Session): Result {
+    async addSession(newSession: Session): Promise<Result> {
         // validation
         if (newSession.exercises.length == 0)
             return {
@@ -98,18 +88,17 @@ class SessionManager {
                 message: "need to add exercises. no slacking.",
             };
 
-        if (newSession.duration <= 0)
+        if (!Number.isInteger(newSession.duration) || newSession.duration <= 0)
             return {
                 success: false,
                 message: "duration needs to be > 0 mins...",
             };
 
-        this.sessions[newSession.id] = { ...newSession, createdAt: newSession.createdAt ?? new Date().toISOString() };
-        this.updateData();
-        return { success: true };
+        const value = $state.snapshot(newSession);
+        return cloud.mutate((client) => saveSession(client, value, true));
     }
-    addActiveSession() {
-        const result = this.addSession(this.activeSession);
+    async addActiveSession() {
+        const result = await this.addSession(this.activeSession);
         if (result.success) this.activeSession = createDefaultSession();
         return result;
     }
@@ -117,9 +106,11 @@ class SessionManager {
     applyRoutine(session: Session): Session {
         if (session.routineId != "custom") {
             const routine = routineManager.getById(session.routineId);
-            session.exercises = routine.exercises.map((entry) => ({
+            session.exercises = (routine?.exercises ?? []).map((entry) => ({
                 ...entry,
-                metric: { ...this.getLatestExercise(entry.exerciseId) },
+                id: uuidv4(),
+                metric: { ...(Object.values(this.sessions).some((saved) => saved.exercises.some((exercise) => exercise.exerciseId === entry.exerciseId))
+                    ? this.getLatestExercise(entry.exerciseId) : entry.metric) },
             }));
         } else {
             session.exercises = [];
@@ -127,21 +118,16 @@ class SessionManager {
         return session;
     }
 
-    removeExerciseEntries(exerciseIds: string[]) {
-        for (const session of Object.values(this.sessions)) {
-            session.exercises = session.exercises.filter(
-                (e) => !exerciseIds.includes(e.exerciseId),
-            );
-        }
-        this.activeSession.exercises = this.activeSession.exercises.filter(
-            (e) => !exerciseIds.includes(e.exerciseId),
-        );
-        this.updateData();
+    async updateSession(session: Session): Promise<Result> {
+        const value = $state.snapshot(session);
+        return cloud.mutate((client) => saveSession(client, value));
     }
-
-    deleteSession(id: string) {
-        delete this.sessions[id];
-        this.updateData();
+    async deleteSession(id: string, revision: number | undefined): Promise<Result> {
+        if (!revision) return { success: false, message: "Reload this session before deleting." };
+        return cloud.mutate(async (client) => {
+            const { error } = await client.rpc("delete_session", { p_id: id, p_expected_revision: revision });
+            if (error) throw error;
+        });
     }
 
     // for stats
@@ -220,7 +206,7 @@ class SessionManager {
     }
     getSessionsForDate(date: string): Session[] {
         return Object.values(this.sessions).filter((s) => s.date === date)
-            .sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""));
+            .sort(compareSessions);
     }
     getDailyDurations(): number[] {
         const totals = new Map<string, number>();
@@ -245,3 +231,13 @@ class SessionManager {
 }
 
 export const sessionManager = new SessionManager();
+
+export function compareSessions(a: Session, b: Session): number {
+    const date = b.date.localeCompare(a.date);
+    if (date) return date;
+    if (a.startTime && b.startTime) {
+        const time = b.startTime.getTime() - a.startTime.getTime();
+        if (time) return time;
+    } else if (a.startTime || b.startTime) return a.startTime ? -1 : 1;
+    return (b.createdAt ?? "").localeCompare(a.createdAt ?? "") || b.id.localeCompare(a.id);
+}
