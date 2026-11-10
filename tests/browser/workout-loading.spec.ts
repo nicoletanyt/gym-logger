@@ -65,6 +65,46 @@ async function seedWorkoutCards(page: Page) {
     });
 }
 
+test("every workout page has an appropriate browser-tab title", async ({ page }) => {
+    await mockSignIn(page);
+    await seedWorkoutCards(page);
+    const pages = [
+        ["/", "Home"],
+        ["/exercises", "Exercises"],
+        ["/exercises/new", "Create Exercise"],
+        ["/exercises/press", "Dumbbell press"],
+        ["/exercises/missing", "Exercise not found"],
+        ["/routines", "Routines"],
+        ["/routines/new", "Create Routine"],
+        ["/routines/strength", "Strength day"],
+        ["/routines/missing", "Routine not found"],
+        ["/sessions", "Sessions"],
+        ["/sessions/new", "New Session"],
+        ["/sessions/first", "Session · 2026-11-10"],
+        ["/sessions/missing", "Session not found"],
+        ["/sessions/summary", "Session Complete"],
+        ["/log", "Log Session"],
+        ["/profile", "Profile"],
+        ["/import", "Import Data"],
+        ["/reset-password", "Choose a new password"],
+    ];
+    for (const [href, title] of pages) {
+        await page.evaluate((href) => {
+            const link = document.createElement("a");
+            link.id = "test-page-navigation";
+            link.href = href;
+            link.textContent = "Open test route";
+            link.style.cssText = "position:fixed;top:0;left:0;z-index:9999;padding:12px;background:white;color:black";
+            document.body.appendChild(link);
+        }, href);
+        await page.getByRole("link", { name: "Open test route", exact: true }).click();
+        await expect(page).toHaveURL(href);
+        await expect(page).toHaveTitle(`${title} · Gym Logger`);
+        await expect(page.locator("head title")).toHaveCount(1);
+        await page.locator("#test-page-navigation").evaluate((element) => element.remove());
+    }
+});
+
 test("routine cards keep names and metrics readable across sizes", async ({ page }) => {
     const errors = await mockSignIn(page);
     await seedWorkoutCards(page);
@@ -1066,11 +1106,13 @@ test("nested exercise creation is a page and returns to the unsaved routine", as
     await page.getByText('Create "Cable row"').click();
     await expect(page).toHaveURL(/\/exercises\/new$/);
     await expect(page.getByRole("heading", { name: "Create Exercise" })).toBeVisible();
+    await expect(page).toHaveTitle("Create Exercise · Gym Logger");
     await expect(page.getByRole("textbox", { name: "Name", exact: true })).toHaveValue("Cable row");
     await page.getByRole("button", { name: "Back", exact: true }).click();
     await expect(page).toHaveURL(/\/routines\/new$/);
     await page.getByRole("button", { name: "Close", exact: true }).click();
     await expect(page.getByLabel("Name", { exact: true })).toHaveValue("My unfinished routine");
+    await expect(page).toHaveTitle("Create Routine · Gym Logger");
 });
 
 test("saving a nested exercise selects it without losing the routine draft", async ({ page }) => {

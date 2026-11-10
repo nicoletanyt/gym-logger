@@ -5,6 +5,39 @@ test.beforeEach(async ({ page }) => {
     page.on("pageerror", (error) => console.error("Browser error:", error.message));
 });
 
+test("favicon matches the signup brand icon and auth titles follow the current mode", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 1000 });
+    await page.goto("/sign-in");
+    await expect(page).toHaveTitle("Sign in · Gym Logger");
+    await page.getByRole("button", { name: "Create an account", exact: true }).click();
+    await expect(page).toHaveTitle("Create an account · Gym Logger");
+    await expect(page.locator("head title")).toHaveCount(1);
+    const favicon = page.locator('head link[rel="icon"]');
+    await expect(favicon).toHaveAttribute("type", "image/svg+xml");
+    const href = await favicon.getAttribute("href");
+    const url = new URL(href!, page.url()).href;
+    const response = await page.evaluate(async (url) => {
+        const response = await fetch(url);
+        return { ok: response.ok, contentType: response.headers.get("content-type"), svg: await response.text() };
+    }, url);
+    expect(response.ok).toBe(true);
+    expect(response.contentType).toContain("image/svg+xml");
+    const svg = response.svg;
+    const iconPaths = await page.evaluate((source) => {
+        const document = new DOMParser().parseFromString(source, "image/svg+xml");
+        return Array.from(document.querySelectorAll("path"), (path) => path.getAttribute("d"));
+    }, svg);
+    expect(iconPaths).toEqual(await page.locator("aside a svg path").evaluateAll((paths) => paths.map((path) => path.getAttribute("d"))));
+    expect(svg).toContain('<title>Gym Logger</title>');
+    expect(svg).not.toContain("svelte-logo");
+    await page.screenshot({ path: test.info().outputPath("signup-brand.png"), animations: "disabled" });
+    await page.getByRole("button", { name: "Sign in", exact: true }).click();
+    await page.getByRole("button", { name: "Forgot password?", exact: true }).click();
+    await expect(page).toHaveTitle("Reset password · Gym Logger");
+    await page.goto(url);
+    await page.screenshot({ path: test.info().outputPath("favicon.png"), clip: { x: 0, y: 0, width: 80, height: 80 } });
+});
+
 test("signed-out users reach sign-in with a return destination", async ({ page }) => {
     const errors: string[] = [];
     page.on("pageerror", (error) => errors.push(error.message));

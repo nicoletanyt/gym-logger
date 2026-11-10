@@ -6,6 +6,8 @@
     import { goto, invalidate } from "$app/navigation";
     import "../app.css";
     import { sessionManager } from "$lib/Session.svelte";
+    import { exerciseManager } from "$lib/Exercise.svelte";
+    import { routineManager } from "$lib/Routine.svelte";
     import NavBar from "$lib/components/NavBar.svelte";
     import { cloud } from "$lib/cloud.svelte";
     import { getSupabase } from "$lib/supabase";
@@ -15,6 +17,31 @@
 
     let { children, data }: LayoutProps = $props();
     const authPage = $derived(page.url.pathname === "/sign-in" || page.url.pathname === "/reset-password" || page.url.pathname.startsWith("/auth/"));
+    const pageNames: Record<string, string> = {
+        "/": "Home",
+        "/exercises": "Exercises",
+        "/exercises/new": "Create Exercise",
+        "/routines": "Routines",
+        "/routines/new": "Create Routine",
+        "/sessions": "Sessions",
+        "/sessions/new": "New Session",
+        "/sessions/summary": "Session Complete",
+        "/log": "Log Session",
+        "/profile": "Profile",
+        "/import": "Import Data",
+    };
+    const pageTitle = $derived.by(() => {
+        if (page.state.createExercise) return "Create Exercise";
+        const route = page.route.id ?? "";
+        const id = page.params.id ?? "";
+        if (route === "/exercises/[id]") return exerciseManager.getById(id)?.name ?? (cloud.ready ? "Exercise not found" : "Exercise");
+        if (route === "/routines/[id]") return routineManager.getById(id)?.name ?? (cloud.ready ? "Routine not found" : "Routine");
+        if (route === "/sessions/[id]") {
+            const session = sessionManager.sessions[id];
+            return session ? `Session · ${session.date}` : cloud.ready ? "Session not found" : "Session";
+        }
+        return pageNames[route];
+    });
     let main = $state<HTMLElement>();
     let wasCreatingExercise = false;
     let previousScroll = 0;
@@ -90,7 +117,10 @@
 </script>
 
 <svelte:head>
-    <link rel="icon" href={favicon} />
+    <link rel="icon" type="image/svg+xml" sizes="any" href={favicon} />
+    {#if !authPage}
+        <title>{pageTitle ? `${pageTitle} · Gym Logger` : "Gym Logger"}</title>
+    {/if}
 </svelte:head>
 
 {#if authPage}
