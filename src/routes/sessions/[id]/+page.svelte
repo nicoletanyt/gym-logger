@@ -1,13 +1,15 @@
 <script lang="ts">
-    import { Check, Pencil, Timer, Trash2 } from "@lucide/svelte";
+    import { Check, ListChecks, Pencil, Timer, Trash2 } from "@lucide/svelte";
     import { page } from "$app/state";
     import Button from "$lib/components/ui/button/button.svelte";
     import ExerciseManager from "$lib/components/ExerciseManager.svelte";
+    import WorkoutCardMeta from "$lib/components/WorkoutCardMeta.svelte";
     import ConfirmDialog from "$lib/components/ConfirmDialog.svelte";
     import Input from "$lib/components/ui/input/input.svelte";
     import BackBtn from "$lib/components/BackBtn.svelte";
     import { sessionManager } from "$lib/Session.svelte";
-    import { formatDuration } from "$lib/constants";
+    import { routineManager } from "$lib/Routine.svelte";
+    import { Combobox } from "$lib/components/ui/combobox/";
     import { goto } from "$app/navigation";
     import { untrack } from "svelte";
     import type { Session } from "$lib/Session.svelte";
@@ -19,11 +21,20 @@
     let session = $state<Session | undefined>();
     let isEdit = $state(false);
     let durationMinutes = $state(0);
+    const routineOptions = $derived.by(() => {
+        const options = routineManager.options;
+        const current = session;
+        if (current && !options.some((option) => option.value === current.routineId)) {
+            return [...options, { value: current.routineId, label: current.routineName ?? "Unavailable routine" }];
+        }
+        return options;
+    });
     $effect(() => {
         const routeId = id;
         untrack(() => {
             const original = sessionManager.sessions[routeId];
             session = original ? structuredClone($state.snapshot(original)) : undefined;
+            durationMinutes = (original?.duration ?? 0) / 60;
             isEdit = false;
         });
     });
@@ -67,6 +78,8 @@
             </ConfirmDialog>
             <Button
                 variant={"outline"}
+                aria-label={isEdit ? "Save session" : "Edit session"}
+                disabled={cloud.saving || cloud.loading || cloud.needsReload}
                 onclick={toggleEdit}
             >
                 {#if isEdit}
@@ -77,20 +90,33 @@
             </Button>
         </div>
     </div>
-    <div class="space-y-3">
-        {#if session.routineName}<p class="text-muted-foreground">{session.routineName}</p>{/if}
-        {#if isEdit}
-            <Field label="Duration (mins)" id="edit-session-duration">
-                <FieldIcon icon={Timer}><Input id="edit-session-duration" type="number" min="0" step="0.1" class="pl-10" bind:value={durationMinutes} /></FieldIcon>
-            </Field>
-        {:else}
-            <p>Duration: {formatDuration(session.duration)}</p>
-        {/if}
+    <div class="grid min-w-0 gap-5">
+        <Field label="Duration (mins)" id="edit-session-duration">
+            <FieldIcon icon={Timer}><Input id="edit-session-duration" type="number" min="0" step="any" class="pl-10" readonly={!isEdit} bind:value={durationMinutes} /></FieldIcon>
+        </Field>
+        <Field label="Routine">
+            <FieldIcon icon={ListChecks}><Combobox
+                noun="routine"
+                ariaLabel="Routine"
+                triggerClass="h-auto min-h-9 pl-10 whitespace-normal text-left wrap-anywhere disabled:opacity-100"
+                class="w-[var(--bits-popover-anchor-width)]"
+                options={routineOptions}
+                bind:value={session.routineId}
+                disabled={!isEdit}
+                onChange={() => {
+                    if (session) session.routineName = routineOptions.find((option) => option.value === session?.routineId)?.label;
+                }}
+            /></FieldIcon>
+        </Field>
     </div>
 </header>
 
-<section>
-    <ExerciseManager bind:exercises={session.exercises} readonly={!isEdit} />
+<section aria-labelledby="session-exercises-heading">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+        <h2 id="session-exercises-heading" class="text-xl">Exercises</h2>
+        <div aria-live="polite"><WorkoutCardMeta exerciseCount={session.exercises.length} /></div>
+    </div>
+    <ExerciseManager bind:exercises={session.exercises} readonly={!isEdit} cardStyle="exercise" />
 </section>
 {:else}
     <header class="flex items-center gap-4 space-y-0"><BackBtn dest="/sessions" /><h1 class="min-w-0 text-2xl sm:text-3xl">Session not found</h1></header><p>This session may have been deleted or belongs to another account.</p>

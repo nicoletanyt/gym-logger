@@ -1,18 +1,14 @@
 <script lang="ts">
     import AddBtn from "$lib/components/AddBtn.svelte";
-    import { routineManager, type Routine } from "$lib/Routine.svelte";
+    import { routineManager } from "$lib/Routine.svelte";
     import Button from "$lib/components/ui/button/button.svelte";
-    import * as Card from "$lib/components/ui/card/index.js";
-    import { Checkbox } from "$lib/components/ui/checkbox/index.js";
+    import RoutineCard from "$lib/components/RoutineCard.svelte";
     import { goto } from "$app/navigation";
-    import { exerciseManager } from "$lib/Exercise.svelte";
-    import MetricDisplay from "$lib/components/MetricDisplay.svelte";
     import ConfirmDialog from "$lib/components/ConfirmDialog.svelte";
     import { Check, Trash, Pencil } from "@lucide/svelte";
     import { cn } from "$lib/utils";
     import { buttonVariants } from "$lib/components/ui/button/index.js";
 
-    let newRoutine = $state<Routine>(routineManager.createDefault());
     let isEditing = $state(false);
     let selectedIds = $state<string[]>([]);
 
@@ -70,50 +66,13 @@
 
 <!-- List of Routines -->
 <section>
-    {#each routineManager.routines as routine}
-        <div class="flex gap-3 items-center">
-            {#if isEditing}
-                <Checkbox
-                    class="size-5"
-                    checked={selectedIds.includes(routine.id)}
-                    onCheckedChange={() => {
-                        toggleSelect(routine.id);
-                    }}
-                />
-            {/if}
-            <Card.Root
-                class="flex-1 {selectedIds.includes(routine.id)
-                    ? 'border-primary'
-                    : ''}"
-                onclick={() => {
-                    if (isEditing) toggleSelect(routine.id);
-                    else goto("/routines/" + routine.id);
-                }}
-            >
-                <Card.Header>
-                    <Card.Title class="flex justify-between">
-                        <span class="font-bold">
-                            {routine.name}
-                        </span>
-                    </Card.Title>
-                </Card.Header>
-
-                <Card.Content class="space-y-2">
-                    {#each routine.exercises as entry, key}
-                        {@const exercise = exerciseManager.getById(
-                            entry.exerciseId,
-                        )}
-                        <div class="flex justify-between items-center">
-                            <div>
-                                <span>{key + 1}.</span>
-                                <span class="text-base">{exercise?.name ?? "Unknown exercise"}</span>
-                            </div>
-                            <MetricDisplay metric={entry.metric} size="lg" />
-                        </div>
-                    {/each}
-                </Card.Content>
-            </Card.Root>
-        </div>
+    {#each routineManager.routines as routine (routine.id)}
+        <RoutineCard
+            {routine}
+            selectable={isEditing}
+            selected={selectedIds.includes(routine.id)}
+            onselect={toggleSelect}
+        />
     {:else}
         <p>No Routines Created</p>
     {/each}

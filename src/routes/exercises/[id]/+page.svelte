@@ -233,7 +233,7 @@
     <MetricTypeTag metric={METRICS[exercise.metricType]} />
     {#if isEdit}
         <ExerciseImagePicker bind:imageLink={draftImage} bind:file={imageFile} />
-    {:else}
+    {:else if exercise.imageLink}
         <ExerciseImage src={exercise.imageLink} alt={`${exercise.name} image`} class="mt-4 h-48 w-full rounded-lg" />
     {/if}
 </header>

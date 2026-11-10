@@ -15,20 +15,21 @@
     import Button from "./ui/button/button.svelte";
     import Input from "./ui/input/input.svelte";
     import Field from "./Field.svelte";
-    import MetricDisplay from "./MetricDisplay.svelte";
     import { sessionManager } from "$lib/Session.svelte";
     import { cloud } from "$lib/cloud.svelte";
     import { pushState } from "$app/navigation";
     import { page } from "$app/state";
     import { takeCreatedExercise } from "$lib/exercise-creation";
-    import ExerciseImage from "./ExerciseImage.svelte";
+    import ExerciseEntryContent from "./ExerciseEntryContent.svelte";
     import ErrorAlert from "./ErrorAlert.svelte";
+    import ExerciseCard from "./ExerciseCard.svelte";
 
     let {
         exercises = $bindable(),
         readonly = false,
         showImages = false,
-    }: { exercises: ExerciseEntry[]; readonly?: boolean; showImages?: boolean } = $props();
+        cardStyle = "default",
+    }: { exercises: ExerciseEntry[]; readonly?: boolean; showImages?: boolean; cardStyle?: "default" | "exercise" } = $props();
     const fieldId = $props.id();
     let metric = $state<ExerciseMetric>(createMetric("weight"));
     let exerciseId = $state("");
@@ -43,6 +44,14 @@
     let showEdit = $state(false);
     let creationToken = $state<string | null>(null);
     let creationVisible = false;
+
+    $effect(() => {
+        if (readonly) {
+            showEdit = false;
+            showAdd = false;
+            selectedRows = [];
+        }
+    });
 
     function deleteItems() {
         exercises = exercises.filter((e) => !selectedRows.includes(e.id));
@@ -185,6 +194,16 @@
 <div class="grid gap-3">
     {#each exercises as e}
         {@const exercise = exerciseManager.getById(e.exerciseId)}
+        {#if cardStyle === "exercise"}
+            <ExerciseCard
+                exercise={{ ...exercise, id: e.exerciseId, name: e.exerciseName ?? exercise?.name ?? "Unknown exercise", metricType: e.metric.type }}
+                metric={e.metric}
+                navigable={readonly && !!exercise && !exercise.archived}
+                selectable={!readonly && showEdit}
+                selected={showEdit && selectedRows.includes(e.id)}
+                onselect={() => selectedRows = selectedRows.includes(e.id) ? selectedRows.filter((id) => id !== e.id) : [...selectedRows, e.id]}
+            />
+        {:else}
         <div class="flex gap-2 items-center">
             {#if !readonly && showEdit}
                 <Checkbox
@@ -212,24 +231,12 @@
                     }
                 }}
             >
-                <Card.Content class="flex justify-between items-center gap-3">
-                    {#if showImages && exercise?.imageLink}
-                        <ExerciseImage src={exercise.imageLink} alt="" class="size-14 shrink-0 rounded-md" />
-                    {/if}
-                    <div class="min-w-0 flex-1 space-y-2">
-                        <p class="font-bold">{e.exerciseName ?? exercise?.name ?? "Unknown exercise"}</p>
-                        <div class="flex gap-2 items-center">
-                            <MetricDisplay metric={e.metric} />
-                        </div>
-                    </div>
-                    <!-- TAG -->
-                    <MetricTypeTag
-                        metric={METRICS[e.metric.type]}
-                        size="sm"
-                    />
+                <Card.Content>
+                    <ExerciseEntryContent entry={e} {showImages} />
                 </Card.Content>
             </Card.Root>
         </div>
+        {/if}
     {/each}
     {#if !readonly}
     <div class="flex justify-between items-center mt-3">

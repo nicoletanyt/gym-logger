@@ -43,6 +43,468 @@ async function mockSignIn(page: Page, mode: "success" | "failure" | "stalled" = 
     return errors;
 }
 
+async function seedWorkoutCards(page: Page) {
+    await page.evaluate(async () => {
+        const modulePath = "/src/lib/cloud.svelte.ts";
+        const { cloud } = await import(modulePath);
+        cloud.data.exercises = [
+            { id: "press", name: "Dumbbell press", metricType: "weight", imageLink: "/exercise-images/dumbbell.jpg" },
+            { id: "plank", name: "Plank", metricType: "duration" },
+            { id: "unused", name: "Unlogged exercise", metricType: "reps" },
+        ];
+        cloud.data.routines = [{ id: "strength", name: "Strength day", exercises: [] }];
+        cloud.data.sessions = {
+            first: { id: "first", revision: 1, date: "2026-11-10", duration: 1800, routineId: "strength", routineName: "Strength day", exercises: [
+                { id: "press-entry", exerciseId: "press", metric: { type: "weight", sets: 3, reps: 10, weight: 20 } },
+                { id: "plank-entry", exerciseId: "plank", metric: { type: "duration", sets: 2, duration: 1 } },
+            ] },
+            second: { id: "second", date: "2026-11-09", duration: 900, routineId: "custom", exercises: [
+                { id: "earlier-entry", exerciseId: "press", metric: { type: "weight", sets: 2, reps: 8, weight: 15 } },
+            ] },
+        };
+    });
+}
+
+test("routine cards keep names and metrics readable across sizes", async ({ page }) => {
+    const errors = await mockSignIn(page);
+    await seedWorkoutCards(page);
+    await page.evaluate(async () => {
+        const modulePath = "/src/lib/cloud.svelte.ts";
+        const { cloud } = await import(modulePath);
+        cloud.data.exercises.push({ id: "running", name: "Treadmill running with a gradual incline", metricType: "cardio" });
+        cloud.data.routines = [
+            { id: "strength", name: "Strength day", exercises: cloud.data.sessions.first.exercises },
+            { id: "conditioning", name: "Full-body conditioning and endurance", exercises: [
+                { id: "running-entry", exerciseId: "running", metric: { type: "cardio", sets: 2, duration: 15, distance: 2.5 } },
+            ] },
+        ];
+    });
+    await page.getByRole("link", { name: "Routines", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Routines", exact: true })).toBeVisible();
+    for (const width of [320, 768, 1280]) {
+        await page.setViewportSize({ width, height: 1000 });
+        await page.emulateMedia({ colorScheme: width === 768 ? "dark" : "light" });
+        const card = page.getByRole("link", { name: "Strength day", exact: true });
+        await expect(card).toHaveAttribute("href", "/routines/strength");
+        await expect(card.getByRole("heading", { name: "Strength day", exact: true })).toBeVisible();
+        await expect(card.getByText("2 exercises", { exact: true })).toBeVisible();
+        await expect(page.getByRole("link", { name: "Full-body conditioning and endurance", exact: true }).getByText("1 exercise", { exact: true })).toBeVisible();
+        const entry = card.getByRole("listitem").first();
+        const nameBox = await entry.getByText("Dumbbell press", { exact: true }).boundingBox();
+        const metricBox = await entry.getByText("3 sets", { exact: true }).boundingBox();
+        expect(metricBox!.y).toBeGreaterThanOrEqual(nameBox!.y + nameBox!.height);
+        await expect(entry.getByText("10 reps", { exact: true })).toBeVisible();
+        await expect(entry.getByText("20 kg", { exact: true })).toBeVisible();
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+        await page.screenshot({ path: test.info().outputPath(`routines-${width}.png`), animations: "disabled" });
+        await page.getByRole("button", { name: "Edit routines", exact: true }).click();
+        const selectable = page.getByRole("button", { name: "Strength day", exact: true });
+        await selectable.focus();
+        await page.keyboard.press("Space");
+        await expect(selectable).toHaveAttribute("aria-pressed", "true");
+        await expect(page.getByRole("checkbox", { name: "Select Strength day", exact: true })).toBeChecked();
+        await expect(selectable.locator("..")).toHaveClass(/ring-primary/);
+        await expect(page).toHaveURL(/\/routines$/);
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+        await page.screenshot({ path: test.info().outputPath(`routines-selected-${width}.png`), animations: "disabled" });
+        await page.keyboard.press("Enter");
+        await expect(selectable).toHaveAttribute("aria-pressed", "false");
+        await page.getByRole("checkbox", { name: "Select Strength day", exact: true }).check();
+        await expect(selectable).toHaveAttribute("aria-pressed", "true");
+        await page.getByRole("button", { name: "Select All", exact: true }).click();
+        await expect(page.getByRole("checkbox", { name: "Select Full-body conditioning and endurance", exact: true })).toBeChecked();
+        await page.getByRole("button", { name: "Deselect All", exact: true }).click();
+        await expect(page.getByRole("checkbox", { name: "Select Strength day", exact: true })).not.toBeChecked();
+        await page.getByRole("button", { name: "Edit routines", exact: true }).click();
+    }
+    await page.getByRole("link", { name: "Strength day", exact: true }).focus();
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("heading", { name: "Strength day", exact: true })).toBeVisible();
+    await expect(page).toHaveURL(/\/routines\/strength$/);
+    for (const width of [320, 1280]) {
+        await page.setViewportSize({ width, height: 1000 });
+        await page.screenshot({ path: test.info().outputPath(`routine-detail-reference-${width}.png`), animations: "disabled" });
+    }
+    expect(errors).toEqual([]);
+});
+
+test("routine cards handle empty routines, missing exercises and unbroken names", async ({ page }) => {
+    await mockSignIn(page);
+    await page.setViewportSize({ width: 320, height: 1000 });
+    await page.evaluate(async () => {
+        const modulePath = "/src/lib/cloud.svelte.ts";
+        const { cloud } = await import(modulePath);
+        cloud.data.routines = [
+            { id: "empty", name: "RoutineWithAnUnusuallyLongUnbrokenName", exercises: [] },
+            { id: "missing", name: "Previous routine", exercises: [
+                { id: "missing-entry", exerciseId: "missing", metric: { type: "weight", sets: 3, reps: 10, weight: 20 } },
+            ] },
+        ];
+    });
+    await page.getByRole("link", { name: "Routines", exact: true }).click();
+    const empty = page.getByRole("link", { name: "RoutineWithAnUnusuallyLongUnbrokenName", exact: true });
+    await expect(empty.getByText("0 exercises", { exact: true })).toBeVisible();
+    await expect(empty.getByRole("list")).toHaveCount(0);
+    await expect(empty.locator('[data-slot="library-card-body"]')).toHaveCount(0);
+    const missing = page.getByRole("link", { name: "Previous routine", exact: true });
+    await expect(missing.getByText("Unknown exercise", { exact: true })).toBeVisible();
+    await expect(missing.getByText("20 kg", { exact: true })).toBeVisible();
+    expect(await page.getByRole("main").evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+    await page.screenshot({ path: test.info().outputPath("routine-edge-cases.png"), animations: "disabled" });
+});
+
+test("library cards share metadata and exercise previews with a four-item limit", async ({ page }) => {
+    const errors = await mockSignIn(page);
+    await page.evaluate(async () => {
+        const modulePath = "/src/lib/cloud.svelte.ts";
+        const { cloud } = await import(modulePath);
+        cloud.data.exercises = Array.from({ length: 6 }, (_, index) => ({
+            id: `exercise-${index + 1}`, name: `Exercise ${index + 1}`, metricType: "reps",
+        }));
+        cloud.data.routines = [{ id: "full", name: "Full routine", exercises: cloud.data.exercises.map((exercise: { id: string }, index: number) => ({
+            id: `entry-${index}`, exerciseId: exercise.id, metric: { type: "reps", sets: 3, reps: 10 },
+        })) }];
+        cloud.data.sessions = { full: { id: "full", date: "2026-11-10", duration: 1800, routineId: "full", exercises: cloud.data.routines[0].exercises } };
+    });
+    async function styles(card: ReturnType<Page["getByRole"]>) {
+        return card.evaluate((element) => {
+            const content = getComputedStyle(element);
+            const surface = getComputedStyle(element.parentElement!);
+            const title = getComputedStyle(element.querySelector("h2")!);
+            return {
+                padding: content.padding, radius: content.borderRadius,
+                background: surface.backgroundColor, shadow: surface.boxShadow,
+                fontSize: title.fontSize, fontWeight: title.fontWeight, lineHeight: title.lineHeight,
+            };
+        });
+    }
+    async function metaStyles(card: ReturnType<Page["getByRole"]>) {
+        return card.locator('[data-slot="workout-card-meta"]').evaluate((element) => {
+            const meta = getComputedStyle(element);
+            const icon = getComputedStyle(element.querySelector("svg")!);
+            return { fontSize: meta.fontSize, fontWeight: meta.fontWeight, color: meta.color, gap: meta.gap, iconWidth: icon.width, iconHeight: icon.height };
+        });
+    }
+    async function entryStyles(entry: ReturnType<Page["getByRole"]>) {
+        return entry.evaluate((element) => {
+            const row = getComputedStyle(element);
+            const name = getComputedStyle(element.querySelector("p")!);
+            return { gap: row.gap, alignItems: row.alignItems, fontSize: name.fontSize, fontWeight: name.fontWeight, lineHeight: name.lineHeight };
+        });
+    }
+    async function headerStyle(card: ReturnType<Page["getByRole"]>) {
+        return card.evaluate((element) => {
+            const header = element.querySelector('[data-slot="library-card-header"]')!;
+            const background = getComputedStyle(header).backgroundColor;
+            const bodyBackground = getComputedStyle(element.parentElement!).backgroundColor;
+            function luminance(color: string) {
+                const canvas = document.createElement("canvas");
+                canvas.width = canvas.height = 1;
+                const context = canvas.getContext("2d")!;
+                context.fillStyle = color;
+                context.fillRect(0, 0, 1, 1);
+                const components = Array.from(context.getImageData(0, 0, 1, 1).data).slice(0, 3).map((value) => value / 255);
+                const [r, g, b] = components.map((value) => value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4);
+                return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+            }
+            const headerLuminance = luminance(background);
+            function contrast(selector: string) {
+                const textLuminance = luminance(getComputedStyle(header.querySelector(selector)!).color);
+                return (Math.max(textLuminance, headerLuminance) + 0.05) / (Math.min(textLuminance, headerLuminance) + 0.05);
+            }
+            return { background, headerLuminance, bodyLuminance: luminance(bodyBackground), titleContrast: contrast("h2"), metaContrast: contrast('[data-slot="workout-card-meta"]') };
+        });
+    }
+    let previewEntryStyle: Awaited<ReturnType<typeof entryStyles>> | undefined;
+    let headerBackground: string | undefined;
+    for (const width of [320, 768, 1280]) {
+        await page.setViewportSize({ width, height: 1000 });
+        await page.emulateMedia({ colorScheme: width === 768 ? "dark" : "light" });
+        await page.getByRole("link", { name: "Routines", exact: true }).click();
+        const routine = page.getByRole("link", { name: "Full routine", exact: true });
+        await expect(routine.getByRole("listitem")).toHaveCount(4);
+        await expect(routine.getByText("6 exercises", { exact: true })).toBeVisible();
+        await expect(routine.getByText("+2 more exercises", { exact: true })).toBeVisible();
+        await expect(routine.getByText("Exercise 5", { exact: true })).toHaveCount(0);
+        const routineStyle = await styles(routine);
+        const routineMetaStyle = await metaStyles(routine);
+        const routineHeaderStyle = await headerStyle(routine);
+        if (width === 768) expect(routineHeaderStyle.headerLuminance).toBeGreaterThan(routineHeaderStyle.bodyLuminance);
+        else expect(routineHeaderStyle.headerLuminance).toBeLessThan(routineHeaderStyle.bodyLuminance);
+        headerBackground ??= routineHeaderStyle.background;
+        expect(routineHeaderStyle.background).toBe(headerBackground);
+        expect(routineHeaderStyle.titleContrast).toBeGreaterThanOrEqual(4.5);
+        expect(routineHeaderStyle.metaContrast).toBeGreaterThanOrEqual(4.5);
+        const firstRoutineItem = await routine.getByRole("listitem").first().textContent();
+        previewEntryStyle = await entryStyles(routine.locator('[data-slot="exercise-entry-content"]').first());
+        await expect(routine.locator('[data-slot="workout-card-meta"] svg')).toHaveCount(1);
+        await page.screenshot({ path: test.info().outputPath(`routine-preview-${width}.png`), animations: "disabled" });
+        await page.getByRole("link", { name: "Sessions", exact: true }).click();
+        const session = page.getByRole("link", { name: "2026-11-10", exact: true });
+        await expect(session.getByRole("listitem")).toHaveCount(4);
+        await expect(session.getByText("6 exercises", { exact: true })).toBeVisible();
+        await expect(session.getByText("30m", { exact: true })).toBeVisible();
+        await expect(session.getByText("+2 more exercises", { exact: true })).toBeVisible();
+        await expect(session.getByText("3 sets", { exact: true })).toHaveCount(4);
+        await expect(session.getByRole("listitem").first().locator("svg")).toHaveCount(3);
+        await expect(session.getByRole("listitem").first()).toHaveText(firstRoutineItem!);
+        expect(await styles(session)).toEqual(routineStyle);
+        expect(await metaStyles(session)).toEqual(routineMetaStyle);
+        expect(await headerStyle(session)).toEqual(routineHeaderStyle);
+        expect(await entryStyles(session.locator('[data-slot="exercise-entry-content"]').first())).toEqual(previewEntryStyle);
+        const titleBox = await session.getByRole("heading").boundingBox();
+        const metaBox = await session.locator('[data-slot="workout-card-meta"]').boundingBox();
+        expect(metaBox!.y).toBeGreaterThanOrEqual(titleBox!.y + titleBox!.height);
+        const countBox = await session.getByText("6 exercises", { exact: true }).boundingBox();
+        const durationBox = await session.getByText("30m", { exact: true }).boundingBox();
+        expect(durationBox!.x).toBeGreaterThan(countBox!.x + countBox!.width);
+        expect(Math.abs(durationBox!.y - countBox!.y)).toBeLessThan(2);
+        expect(await page.getByRole("main").evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+        await page.screenshot({ path: test.info().outputPath(`session-preview-${width}.png`), animations: "disabled" });
+        await page.getByRole("link", { name: "Exercises", exact: true }).click();
+        const exercise = page.getByRole("link", { name: "Exercise 1", exact: true });
+        await expect(exercise).toBeVisible();
+        expect(await styles(exercise)).toEqual(routineStyle);
+        await expect(page.locator('main [data-slot="card"]')).toHaveCount(6);
+        await page.screenshot({ path: test.info().outputPath(`exercise-library-${width}.png`), animations: "disabled" });
+        await page.getByRole("button", { name: "Edit exercises", exact: true }).click();
+        const selected = page.getByRole("button", { name: "Exercise 1", exact: true });
+        await selected.focus();
+        await page.keyboard.press("Space");
+        await expect(selected).toHaveAttribute("aria-pressed", "true");
+        await expect(selected.locator("..")).toHaveClass(/ring-primary/);
+        await expect(page.getByRole("checkbox", { name: "Select Exercise 1", exact: true })).toBeChecked();
+        await page.keyboard.press("Enter");
+        await expect(selected).toHaveAttribute("aria-pressed", "false");
+        await page.getByRole("button", { name: "Edit exercises", exact: true }).click();
+        expect(await page.getByRole("main").evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+    }
+    await page.getByRole("link", { name: "Routines", exact: true }).click();
+    await page.getByRole("link", { name: "Full routine", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Full routine", exact: true })).toBeVisible();
+    await expect(page.locator('main [data-slot="card"]')).toHaveCount(6);
+    await expect(page.getByText("Exercise 6", { exact: true })).toBeVisible();
+    await expect(page.getByRole("region", { name: "Exercises", exact: true }).getByText("6 exercises", { exact: true })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Exercise 1", exact: true })).toContainText("3 sets");
+    await page.getByRole("link", { name: "Sessions", exact: true }).click();
+    await page.getByRole("link", { name: "2026-11-10", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "2026-11-10", exact: true })).toBeVisible();
+    await expect(page.locator('main [data-slot="card"]')).toHaveCount(6);
+    await expect(page.getByRole("region", { name: "Exercises", exact: true }).getByText("6 exercises", { exact: true })).toBeVisible();
+    await page.getByRole("link", { name: "Sessions", exact: true }).click();
+    await page.evaluate(async () => {
+        const modulePath = "/src/lib/cloud.svelte.ts";
+        const { cloud } = await import(modulePath);
+        cloud.data.sessions.full.duration = 0;
+    });
+    await expect(page.getByRole("link", { name: "2026-11-10", exact: true }).getByText("0s", { exact: true })).toBeVisible();
+    await page.getByRole("link", { name: "Routines", exact: true }).click();
+    for (const count of [5, 4, 3]) {
+        await page.evaluate(async (count) => {
+            const modulePath = "/src/lib/cloud.svelte.ts";
+            const { cloud } = await import(modulePath);
+            cloud.data.routines[0].exercises = cloud.data.routines[0].exercises.slice(0, count);
+        }, count);
+        const routine = page.getByRole("link", { name: "Full routine", exact: true });
+        await expect(routine.getByRole("listitem")).toHaveCount(Math.min(count, 4));
+        await expect(routine.getByText(`${count} exercises`, { exact: true })).toBeVisible();
+        if (count === 5) await expect(routine.getByText("+1 more exercise", { exact: true })).toBeVisible();
+        else await expect(routine.getByText(/more exercise/)).toHaveCount(0);
+    }
+    expect(errors).toEqual([]);
+});
+
+test("routine and session details share exercise cards and live list counts", async ({ page }) => {
+    const errors = await mockSignIn(page);
+    await seedWorkoutCards(page);
+    await page.evaluate(async () => {
+        const modulePath = "/src/lib/cloud.svelte.ts";
+        const { cloud } = await import(modulePath);
+        cloud.data.routines[0].exercises = cloud.data.sessions.first.exercises;
+    });
+    async function cardStyle() {
+        return page.getByRole("region", { name: "Exercises", exact: true }).locator('[data-slot="card"]').first().evaluate((element) => {
+            const surface = getComputedStyle(element);
+            const header = getComputedStyle(element.querySelector('[data-slot="library-card-header"]')!);
+            const title = getComputedStyle(element.querySelector("h2")!);
+            const image = element.querySelector("img")!.getBoundingClientRect();
+            return { radius: surface.borderRadius, background: surface.backgroundColor, shadow: surface.boxShadow, padding: header.padding, fontSize: title.fontSize, fontWeight: title.fontWeight, imageWidth: image.width, imageHeight: image.height };
+        });
+    }
+    for (const width of [320, 768, 1280]) {
+        await page.setViewportSize({ width, height: 1000 });
+        await page.emulateMedia({ colorScheme: width === 768 ? "dark" : "light" });
+        await page.getByRole("link", { name: "Routines", exact: true }).click();
+        await page.getByRole("link", { name: "Strength day", exact: true }).click();
+        const region = page.getByRole("region", { name: "Exercises", exact: true });
+        await expect(region.getByText("2 exercises", { exact: true })).toBeVisible();
+        await expect(region.locator('[data-slot="card"]')).toHaveCount(2);
+        await expect(region.locator('img[src="/exercise-images/dumbbell.jpg"]')).toBeVisible();
+        await expect(region.getByRole("link", { name: "Dumbbell press", exact: true })).toContainText("20 kg");
+        const routineStyle = await cardStyle();
+        const countBox = await region.getByText("2 exercises", { exact: true }).boundingBox();
+        const cardBox = await region.locator('[data-slot="card"]').first().boundingBox();
+        expect(countBox!.y + countBox!.height).toBeLessThan(cardBox!.y);
+        expect(await page.getByRole("main").evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+        await page.screenshot({ path: test.info().outputPath(`routine-detail-${width}.png`), animations: "disabled" });
+        await page.getByRole("link", { name: "Sessions", exact: true }).click();
+        await page.getByRole("link", { name: "2026-11-10", exact: true }).click();
+        await expect(region.getByText("2 exercises", { exact: true })).toBeVisible();
+        await expect(region.locator('[data-slot="card"]')).toHaveCount(2);
+        expect(await cardStyle()).toEqual(routineStyle);
+        expect(await page.getByRole("main").evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+        await page.screenshot({ path: test.info().outputPath(`session-detail-${width}.png`), animations: "disabled" });
+    }
+    for (const kind of ["routine", "session"] as const) {
+        await page.getByRole("link", { name: kind === "routine" ? "Routines" : "Sessions", exact: true }).click();
+        await page.getByRole("link", { name: kind === "routine" ? "Strength day" : "2026-11-10", exact: true }).click();
+        await page.getByRole("button", { name: `Edit ${kind}`, exact: true }).click();
+        const region = page.getByRole("region", { name: "Exercises", exact: true });
+        await region.getByRole("button", { name: "Edit exercises", exact: true }).click();
+        for (const [name, count] of [["Dumbbell press", "1 exercise"], ["Plank", "0 exercises"]]) {
+            await region.getByRole("checkbox", { name: `Select ${name}`, exact: true }).check();
+            await region.getByRole("button", { name: "Remove selected exercises", exact: true }).click();
+            await expect(region.locator('[aria-live="polite"]')).toHaveText(count);
+        }
+        await expect(region.locator('[data-slot="card"]')).toHaveCount(0);
+    }
+    expect(errors).toEqual([]);
+});
+
+test("workout cards and detail layouts", async ({ page }) => {
+    const errors = await mockSignIn(page);
+    await seedWorkoutCards(page);
+    for (const width of [320, 768, 1280]) {
+        await page.setViewportSize({ width, height: 900 });
+        await page.emulateMedia({ colorScheme: width === 768 ? "dark" : "light" });
+        await page.getByRole("link", { name: "Exercises", exact: true }).click();
+        await expect(page.getByRole("heading", { name: "Exercises", exact: true })).toBeVisible();
+        const unlogged = page.getByRole("link", { name: "Unlogged exercise", exact: true });
+        await expect(unlogged.locator('[data-slot="card-content"]')).toHaveText("Unlogged exercise");
+        await expect(page.getByRole("main").getByText("Weight", { exact: true })).toHaveCount(0);
+        await expect(page.getByRole("main").getByText("Duration", { exact: true })).toHaveCount(0);
+        await page.screenshot({ path: test.info().outputPath(`exercises-${width}.png`), animations: "disabled" });
+        await unlogged.click();
+        await expect(page.getByRole("heading", { name: "Unlogged exercise", exact: true })).toBeVisible();
+        await expect(page.getByRole("main").getByRole("img")).toHaveCount(0);
+        await page.screenshot({ path: test.info().outputPath(`exercise-detail-${width}.png`), animations: "disabled" });
+        await page.getByRole("link", { name: "Sessions", exact: true }).click();
+        await expect(page.getByRole("heading", { name: "Sessions", exact: true })).toBeVisible();
+        const cards = page.locator('main [data-slot="card"]');
+        await expect(cards).toHaveCount(2);
+        const first = await cards.nth(0).boundingBox();
+        const second = await cards.nth(1).boundingBox();
+        expect(Math.abs(first!.x - second!.x)).toBeLessThan(2);
+        expect(second!.y).toBeGreaterThan(first!.y + first!.height);
+        expect(Math.abs(first!.width - second!.width)).toBeLessThan(2);
+        await expect(cards.nth(0).locator('[data-slot="library-card-header"] svg[aria-hidden="true"]')).toHaveCount(4);
+        await expect(cards.nth(0).getByText("2 exercises", { exact: true })).toBeVisible();
+        await expect(cards.nth(1).getByText("1 exercise", { exact: true })).toBeVisible();
+        await expect(cards.nth(0)).toContainText("20 kg");
+        await page.screenshot({ path: test.info().outputPath(`sessions-${width}.png`), animations: "disabled" });
+        await page.getByText("2026-11-10", { exact: true }).click();
+        await expect(page.getByRole("heading", { name: "2026-11-10", exact: true })).toBeVisible();
+        await expect(page.getByLabel("Duration (mins)", { exact: true })).toHaveValue("30");
+        await expect(page.getByLabel("Duration (mins)", { exact: true })).toHaveAttribute("readonly", "");
+        await expect(page.getByRole("combobox", { name: "Routine" })).toBeDisabled();
+        await expect(page.getByRole("combobox", { name: "Routine" })).toContainText("Strength day");
+        await expect(page.getByRole("main").locator('img[src="/exercise-images/dumbbell.jpg"]')).toBeVisible();
+        await expect(page.getByRole("link", { name: "Dumbbell press", exact: true })).toContainText("20 kg");
+        await page.screenshot({ path: test.info().outputPath(`session-detail-${width}.png`), animations: "disabled" });
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    }
+    await page.getByRole("link", { name: "Sessions", exact: true }).click();
+    await page.getByRole("heading", { name: "Sessions", exact: true }).waitFor();
+    await page.getByRole("link", { name: "2026-11-09", exact: true }).focus();
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("heading", { name: "2026-11-09", exact: true })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Dumbbell press", exact: true })).toContainText("15 kg");
+    expect(errors).toEqual([]);
+});
+
+test("empty exercise and session pages offer inline creation actions", async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 800 });
+    await mockSignIn(page);
+    await page.getByRole("link", { name: "Sessions", exact: true }).click();
+    await expect(page.getByText("No Sessions Created", { exact: true })).toBeVisible();
+    await page.getByRole("link", { name: "Log Session", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Log Session", exact: true })).toBeVisible();
+    await page.getByRole("link", { name: "Exercises", exact: true }).click();
+    await expect(page.getByText("No Exercises Added", { exact: true })).toBeVisible();
+    await page.getByRole("link", { name: "Add Exercise", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Create Exercise", exact: true })).toBeVisible();
+});
+
+test("exercise name and session date searches filter and reset", async ({ page }) => {
+    await mockSignIn(page);
+    await seedWorkoutCards(page);
+    await page.getByRole("link", { name: "Exercises", exact: true }).click();
+    const search = page.getByRole("searchbox", { name: "Search exercises" });
+    await search.fill("  PRESS  ");
+    await expect(page.locator('main [data-slot="card"]')).toHaveCount(1);
+    await expect(page.getByRole("link", { name: "Dumbbell press", exact: true })).toBeVisible();
+    await search.fill("no match");
+    await expect(page.getByRole("status")).toHaveText("No exercises match your search.");
+    await page.getByRole("button", { name: "Clear search", exact: true }).click();
+    await expect(search).toHaveValue("");
+    await expect(page.locator('main [data-slot="card"]')).toHaveCount(3);
+    await page.getByRole("link", { name: "Sessions", exact: true }).click();
+    const date = page.getByLabel("Search sessions by date", { exact: true });
+    await date.fill("2026-11-09");
+    await expect(page.locator('main [data-slot="card"]')).toHaveCount(1);
+    await expect(page.locator('main [data-slot="card"]')).toContainText("2026-11-09");
+    await page.getByRole("button", { name: "Filter sessions" }).click();
+    await page.getByRole("button", { name: "Sort by duration", exact: true }).click();
+    await page.keyboard.press("Escape");
+    await expect(page.locator('main [data-slot="card"]')).toHaveCount(1);
+    await date.fill("2026-11-01");
+    await expect(page.getByRole("status")).toHaveText("No sessions on this date.");
+    await page.getByRole("button", { name: "Clear date search", exact: true }).click();
+    await expect(date).toHaveValue("");
+    await expect(page.locator('main [data-slot="card"]')).toHaveCount(2);
+});
+
+test("session detail editing keeps recorded exercises when changing routine", async ({ page }) => {
+    await mockSignIn(page);
+    await seedWorkoutCards(page);
+    await page.getByRole("link", { name: "Sessions", exact: true }).click();
+    await page.getByRole("heading", { name: "Sessions", exact: true }).waitFor();
+    await page.getByText("2026-11-10", { exact: true }).click();
+    await page.getByRole("button", { name: "Edit session", exact: true }).click();
+    const duration = page.getByLabel("Duration (mins)", { exact: true });
+    await expect(duration).not.toHaveAttribute("readonly");
+    await duration.fill("45.5");
+    await page.getByRole("combobox", { name: "Routine" }).click();
+    await page.getByRole("option", { name: "Custom", exact: true }).click();
+    await expect(page.getByRole("main").getByText("Dumbbell press", { exact: true }).locator("..")).toContainText("20 kg");
+    await expect(page.getByRole("main").getByText("Plank", { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Edit exercises", exact: true }).click();
+    await page.getByRole("checkbox", { name: "Select Dumbbell press" }).check();
+    await page.getByRole("button", { name: "Edit selected exercise", exact: true }).click();
+    await expect(page.getByRole("dialog", { name: "Edit Exercise" }).getByLabel("Weight (kg)")).toHaveValue("20");
+    await page.getByRole("button", { name: "Close", exact: true }).click();
+    await page.route("**/rest/v1/rpc/save_session", async (route) => {
+        await route.fulfill({ status: 200, contentType: "application/json", body: "null" });
+    });
+    await page.route("**/rest/v1/sessions?**", (route) => route.fulfill({
+        status: 200, contentType: "application/json", body: JSON.stringify([{
+            id: "first", workout_date: "2026-11-10", duration_seconds: 2730, routine_id: null, revision: 2, created_at: "2026-11-10T12:00:00Z",
+            session_exercises: [
+                { id: "press-entry", exercise_id: "press", position: 0, metric_type: "weight", sets: 3, reps: 10, weight_kg: 20, exercise_name_snapshot: "Dumbbell press" },
+                { id: "plank-entry", exercise_id: "plank", position: 1, metric_type: "duration", sets: 2, duration_minutes: 1, exercise_name_snapshot: "Plank" },
+            ],
+        }]),
+    }));
+    const saved = page.waitForRequest("**/rest/v1/rpc/save_session");
+    await page.getByRole("button", { name: "Save session", exact: true }).click();
+    expect((await saved).postDataJSON()).toMatchObject({ p_expected_revision: 1, p_session: { duration: 2730, routineId: "custom", exercises: [{ exerciseId: "press" }, { exerciseId: "plank" }] } });
+    await expect(page.getByRole("button", { name: "Edit session", exact: true })).toBeVisible();
+    await expect(duration).toHaveValue("45.5");
+    await expect(duration).toHaveAttribute("readonly", "");
+    await expect(page.getByRole("combobox", { name: "Routine" })).toContainText("Custom");
+    await expect(page.getByRole("main").getByText("Dumbbell press", { exact: true }).locator("..")).toContainText("20 kg");
+});
+
 test("successful empty workout responses replace the homepage loading state", async ({ page }) => {
     const errors = await mockSignIn(page);
     await expect(page.getByRole("heading", { name: "Gym Logger", exact: true })).toBeVisible();

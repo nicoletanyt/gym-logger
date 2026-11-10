@@ -4,6 +4,7 @@
     import { page } from "$app/state";
     import Button from "$lib/components/ui/button/button.svelte";
     import ExerciseManager from "$lib/components/ExerciseManager.svelte";
+    import WorkoutCardMeta from "$lib/components/WorkoutCardMeta.svelte";
     import ConfirmDialog from "$lib/components/ConfirmDialog.svelte";
     import { goto } from "$app/navigation";
     import BackBtn from "$lib/components/BackBtn.svelte";
@@ -64,6 +65,8 @@
             </ConfirmDialog>
             <Button
                 variant={"outline"}
+                aria-label={isEdit ? "Save routine" : "Edit routine"}
+                disabled={cloud.saving || cloud.loading || cloud.needsReload}
                 onclick={toggleEdit}
             >
                 {#if isEdit}
@@ -76,8 +79,12 @@
     </div>
 </header>
 
-<section>
-    <ExerciseManager bind:exercises={routine.exercises} readonly={!isEdit} />
+<section aria-labelledby="routine-exercises-heading">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+        <h2 id="routine-exercises-heading" class="text-xl">Exercises</h2>
+        <div aria-live="polite"><WorkoutCardMeta exerciseCount={routine.exercises.length} /></div>
+    </div>
+    <ExerciseManager bind:exercises={routine.exercises} readonly={!isEdit} cardStyle="exercise" />
 </section>
 {:else}
     <header class="flex items-center gap-4 space-y-0"><BackBtn dest="/routines" /><h1 class="min-w-0 text-2xl sm:text-3xl">Routine not found</h1></header><p>This routine may have been deleted or belongs to another account.</p>

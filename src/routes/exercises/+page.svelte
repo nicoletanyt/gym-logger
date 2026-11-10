@@ -8,10 +8,16 @@
     } from "$lib/components/ui/button/button.svelte";
     import ConfirmDialog from "$lib/components/ConfirmDialog.svelte";
     import { cn } from "$lib/utils";
-    import { Check, Trash, Pencil } from "@lucide/svelte";
+    import { Check, Trash, Pencil, Plus, Search } from "@lucide/svelte";
+    import Input from "$lib/components/ui/input/input.svelte";
+    import FieldIcon from "$lib/components/FieldIcon.svelte";
 
     let isEditing = $state(false);
     let selectedIds = $state<string[]>([]);
+    let search = $state("");
+    const filteredExercises = $derived(exerciseManager.exercises.filter((exercise) =>
+        exercise.name.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()),
+    ));
 
     function toggleSelect(id: string) {
         selectedIds = selectedIds.includes(id)
@@ -20,14 +26,14 @@
     }
 
     const allSelected = $derived(
-        exerciseManager.exercises.length > 0 &&
-            selectedIds.length == exerciseManager.exercises.length,
+        filteredExercises.length > 0 &&
+            filteredExercises.every((exercise) => selectedIds.includes(exercise.id)),
     );
 
     function toggleSelectAll() {
         selectedIds = allSelected
-            ? []
-            : exerciseManager.exercises.map((e) => e.id);
+            ? selectedIds.filter((id) => !filteredExercises.some((exercise) => exercise.id === id))
+            : [...new Set([...selectedIds, ...filteredExercises.map((exercise) => exercise.id)])];
     }
 
     function toggleEdit() {
@@ -59,9 +65,13 @@
     {/if}
 </header>
 
+<FieldIcon icon={Search}>
+    <Input type="search" aria-label="Search exercises" placeholder="Search exercises…" class="h-11 pl-10" bind:value={search} />
+</FieldIcon>
+
 <!-- List of Exercises -->
 <section>
-    {#each exerciseManager.exercises as item}
+    {#each filteredExercises as item}
         <ExerciseCard
             exercise={item}
             selectable={isEditing}
@@ -69,7 +79,15 @@
             onselect={toggleSelect}
         />
     {:else}
-        <p>No Exercises Added</p>
+        <div class="grid justify-items-center gap-4 py-10 text-center">
+            {#if exerciseManager.exercises.length > 0}
+                <p class="text-muted-foreground" role="status">No exercises match your search.</p>
+                <Button variant="outline" class="min-h-11" onclick={() => search = ""}>Clear search</Button>
+            {:else}
+                <p class="text-muted-foreground">No Exercises Added</p>
+                <Button href="/exercises/new" class="min-h-11"><Plus aria-hidden="true" />Add Exercise</Button>
+            {/if}
+        </div>
     {/each}
 </section>
 

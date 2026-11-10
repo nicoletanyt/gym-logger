@@ -1,10 +1,12 @@
 <script lang="ts">
-    import { goto } from "$app/navigation";
     import SessionCard from "$lib/components/SessionCard.svelte";
     import Button from "$lib/components/ui/button/button.svelte";
     import * as Popover from "$lib/components/ui/popover/index.js";
     import { sessionManager, compareSessions } from "$lib/Session.svelte";
-    import { ArrowDown, ArrowUp, ListFilter } from "@lucide/svelte";
+    import { ArrowDown, ArrowUp, CalendarDays, ListFilter, Plus, X } from "@lucide/svelte";
+    import Input from "$lib/components/ui/input/input.svelte";
+    import FieldIcon from "$lib/components/FieldIcon.svelte";
+    import Field from "$lib/components/Field.svelte";
 
     const sortOptions = [
         { value: "date", label: "Date" },
@@ -12,8 +14,9 @@
     ] as const;
     let sortBy = $state<"date" | "duration">("date");
     let sortDirection = $state<"asc" | "desc">("desc");
+    let searchDate = $state("");
     let sortedSessions = $derived(
-        Object.values(sessionManager.sessions).sort((a, b) => {
+        Object.values(sessionManager.sessions).filter((session) => !searchDate || session.date === searchDate).sort((a, b) => {
             const comparison =
                 sortBy == "date"
                     ? -compareSessions(a, b)
@@ -74,15 +77,31 @@
     </Popover.Root>
 </header>
 
-<div class="grid gap-6">
+<div class="mb-6">
+    <Field label="Search by date" id="session-search-date">
+        <div class="flex min-w-0 items-center gap-2">
+            <FieldIcon icon={CalendarDays} class="min-w-0 flex-1">
+                <Input id="session-search-date" type="date" aria-label="Search sessions by date" class="h-11 pl-10" bind:value={searchDate} />
+            </FieldIcon>
+            {#if searchDate}
+                <Button variant="outline" class="size-11 shrink-0" size="icon" aria-label="Clear date search" onclick={() => searchDate = ""}><X aria-hidden="true" /></Button>
+            {/if}
+        </div>
+    </Field>
+</div>
+
+<div class="grid grid-cols-1 gap-3 sm:gap-6">
     {#each sortedSessions as session (session.id)}
-        <SessionCard
-            {session}
-            onclick={() => {
-                goto(`/sessions/${session.id}`);
-            }}
-        />
+        <SessionCard {session} />
     {:else}
-        <p>No Sessions Created</p>
+        <div class="grid justify-items-center gap-4 py-10 text-center">
+            {#if Object.keys(sessionManager.sessions).length > 0}
+                <p class="text-muted-foreground" role="status">No sessions on this date.</p>
+                <Button variant="outline" class="min-h-11" onclick={() => searchDate = ""}>Show all sessions</Button>
+            {:else}
+                <p class="text-muted-foreground">No Sessions Created</p>
+                <Button href="/log" class="min-h-11"><Plus aria-hidden="true" />Log Session</Button>
+            {/if}
+        </div>
     {/each}
 </div>

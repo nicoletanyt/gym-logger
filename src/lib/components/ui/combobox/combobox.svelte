@@ -15,6 +15,7 @@
         noun,
         ariaLabel,
         invalid = false,
+        disabled = false,
         onChange = () => {},
         onCreate,
         value = $bindable<string>(""),
@@ -27,6 +28,7 @@
         noun: string;
         ariaLabel?: string;
         invalid?: boolean;
+        disabled?: boolean;
         onChange?: () => void;
         onCreate?: (name: string) => void;
         value?: string;
@@ -66,6 +68,7 @@
             <Button
                 {...props}
                 variant="outline"
+                {disabled}
                 class={cn("w-full justify-between", triggerClass)}
                 role="combobox"
                 aria-label={ariaLabel}
