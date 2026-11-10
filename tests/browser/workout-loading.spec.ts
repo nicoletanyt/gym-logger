@@ -154,6 +154,41 @@ test("appearance changes synchronize across tabs", async ({ page, context }) => 
     await other.close();
 });
 
+test("profile actions have icons, fit both themes, and keep exports working", async ({ page }) => {
+    await mockSignIn(page);
+    await page.evaluate(() => localStorage.setItem("SESSIONS_STORED", "[]"));
+    await page.locator("header").first().getByRole("button").click();
+    await expect(page.getByRole("heading", { name: "Profile" })).toBeVisible();
+    for (const [width, theme] of [[320, "Light"], [1280, "Dark"]] as const) {
+        await page.setViewportSize({ width, height: 900 });
+        await page.getByText(theme, { exact: true }).click();
+        for (const name of ["Import Data", "Export Cloud Data", "Download Previous Browser Data", "Sign out"]) {
+            const button = page.getByRole("button", { name, exact: true });
+            await expect(button.locator('svg[aria-hidden="true"]')).toBeVisible();
+            expect((await button.boundingBox())!.height).toBeGreaterThanOrEqual(48);
+        }
+        const changePassword = page.getByRole("link", { name: "Change Password" });
+        await expect(changePassword.locator('svg[aria-hidden="true"]')).toBeVisible();
+        await expect(changePassword).toHaveAttribute("href", "/reset-password");
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    }
+    const cloudDownload = page.waitForEvent("download");
+    await page.getByRole("button", { name: "Export Cloud Data" }).click();
+    expect((await cloudDownload).suggestedFilename()).toBe("gym-logger-backup.json");
+    const legacyDownload = page.waitForEvent("download");
+    await page.getByRole("button", { name: "Download Previous Browser Data" }).click();
+    expect((await legacyDownload).suggestedFilename()).toBe("gym-logger-local-backup.json");
+    await page.getByRole("button", { name: "Import Data" }).click();
+    await expect(page).toHaveURL(/\/import$/);
+});
+
+test("profile sign out returns to sign in", async ({ page }) => {
+    await mockSignIn(page);
+    await page.locator("header").first().getByRole("button").click();
+    await page.getByRole("button", { name: "Sign out", exact: true }).click();
+    await expect(page).toHaveURL(/\/sign-in/);
+});
+
 test("exercise image picker supports library selection and upload validation", async ({ page }) => {
     await mockSignIn(page);
     await page.getByRole('link', { name: 'Exercises', exact: true }).click();

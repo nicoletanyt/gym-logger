@@ -8,7 +8,7 @@
     import { STORAGE_KEYS } from "$lib/constants";
     import { onMount } from "svelte";
     import { getThemePreference, setThemePreference, THEME_STORAGE_KEY, type ThemePreference } from "$lib/theme";
-    import { Monitor, Moon, Sun } from "@lucide/svelte";
+    import { Download, KeyRound, LogOut, Mail, Monitor, Moon, Sun, Upload } from "@lucide/svelte";
 
     let signingOut = $state(false);
     let error = $state("");
@@ -53,15 +53,16 @@
     }
 </script>
 
-<header>
+<div class="mx-auto w-full max-w-2xl pb-8">
+<header class="mt-4 mb-8">
     <div class="flex items-center gap-4">
-    <BackBtn />
-    <h1 class="min-w-0 text-2xl sm:text-3xl">Profile</h1>
+        <BackBtn />
+        <h1 class="min-w-0 text-2xl sm:text-3xl">Profile</h1>
     </div>
-    <p class="text-muted-foreground">{page.data.user?.email}</p>
+    <p class="flex min-w-0 items-center gap-2 text-muted-foreground"><Mail aria-hidden="true" class="size-4 shrink-0" /><span class="min-w-0 break-words"><span class="font-medium text-foreground">Email:</span> {page.data.user?.email}</span></p>
 </header>
 
-<section class="space-y-3">
+<section class="my-8 gap-3 space-y-0">
     <div class="space-y-1">
         <h2>Appearance</h2>
         <p class="text-sm text-muted-foreground">Choose how Gym Logger looks on this device.</p>
@@ -77,27 +78,31 @@
     </fieldset>
 </section>
 
-<section class="space-y-3">
+<section class="my-8 gap-3 space-y-0">
+    <h2>Data</h2>
     <Button
         onclick={() => {
             goto("/import");
         }}
         variant={"secondary"}
+        class="h-auto min-h-12 w-full justify-start gap-3 whitespace-normal px-4 py-3 text-left"
     >
+        <Upload aria-hidden="true" />
         Import Data
     </Button>
-    <Button onclick={exportCloud} variant={"secondary"}>Export Cloud Data</Button>
-    <Button href="/reset-password" variant="outline">Change Password</Button>
+    <Button onclick={exportCloud} variant="secondary" class="h-auto min-h-12 w-full justify-start gap-3 whitespace-normal px-4 py-3 text-left"><Download aria-hidden="true" /> Export Cloud Data</Button>
     {#if hasLegacyData}
         <div class="rounded-xl border p-4 space-y-3">
             <p class="text-sm text-muted-foreground">Previous workout data is still in this browser. It has not been uploaded or deleted. Download a backup for your later migration.</p>
-            <Button onclick={exportLegacy} variant="outline">Download Previous Browser Data</Button>
+            <Button onclick={exportLegacy} variant="outline" class="h-auto min-h-12 w-full justify-start gap-3 whitespace-normal px-4 py-3 text-left"><Download aria-hidden="true" /> Download Previous Browser Data</Button>
         </div>
     {/if}
 </section>
 
-<section>
-    <hr />
+<section class="my-8 gap-3 space-y-0">
+    <h2>Security</h2>
+    <Button href="/reset-password" variant="outline" class="h-auto min-h-12 w-full justify-start gap-3 whitespace-normal px-4 py-3 text-left"><KeyRound aria-hidden="true" /> Change Password</Button>
     {#if error}<p role="alert" class="text-destructive">{error}</p>{/if}
-    <Button onclick={signOut} variant="outline" disabled={signingOut}>{signingOut ? "Signing out…" : "Sign out"}</Button>
+    <Button onclick={signOut} variant="outline" class="h-auto min-h-12 w-full justify-start gap-3 whitespace-normal px-4 py-3 text-left" disabled={signingOut}><LogOut aria-hidden="true" /> {signingOut ? "Signing out…" : "Sign out"}</Button>
 </section>
+</div>
