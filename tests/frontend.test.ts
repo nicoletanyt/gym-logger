@@ -13,6 +13,7 @@ import { cloud, cloudError, WORKOUT_LOAD_TIMEOUT_MS } from "../src/lib/cloud.sve
 import { mapEntry, mapSession, saveSession } from "../src/lib/workout-repository";
 import { compareSessions, sessionManager } from "../src/lib/Session.svelte";
 import { parseImportText } from "../src/lib/importer";
+import { libraryImages, MAX_IMAGE_SIZE, uploadExerciseImage, validateImage } from "../src/lib/exercise-images";
 
 const empty = () => ({ exercises: [], routines: [], sessions: {} });
 const session = (overrides: Partial<Session> = {}): Session => ({ id: "session-a", date: "2026-11-09", duration: 600, exercises: [], routineId: "custom", createdAt: "2026-11-09T12:00:00Z", ...overrides });
@@ -21,6 +22,23 @@ const entryRow: Tables<"session_exercises"> = {
     metric_type: "weight", sets: 3, reps: 10, weight_kg: 12.5, duration_minutes: null, distance_km: null,
     avg_duration_seconds: 42.5, exercise_name_snapshot: "Original name",
 };
+
+describe("exercise images", () => {
+    it("validates image format and size", () => {
+        expect(validateImage(new File(['image'], 'photo.jpg', { type: 'image/jpeg' }))).toBeNull();
+        expect(validateImage(new File(['x'], 'bad.svg', { type: 'image/svg+xml' }))).toMatch(/JPEG/);
+        expect(validateImage(new File([new Uint8Array(MAX_IMAGE_SIZE + 1)], 'big.png', { type: 'image/png' }))).toMatch(/5 MB/);
+        expect(libraryImages.length).toBeGreaterThan(0);
+    });
+    it("uploads under the owner's folder and propagates errors", async () => {
+        const upload = vi.fn().mockResolvedValueOnce({ error: null }).mockResolvedValueOnce({ error: new Error('upload failed') });
+        const client = { storage: { from: vi.fn().mockReturnValue({ upload }) } } as unknown as SupabaseClient<Database>;
+        const file = new File(['image'], 'photo.jpg', { type: 'image/jpeg' });
+        expect(await uploadExerciseImage(client, 'owner', file)).toMatch(/^storage:exercise-images\/owner\/.+\.jpg$/);
+        expect(upload.mock.calls[0][2]).toMatchObject({ contentType: 'image/jpeg', upsert: false });
+        await expect(uploadExerciseImage(client, 'owner', file)).rejects.toThrow('upload failed');
+    });
+});
 
 beforeEach(() => {
     cloud.clear(); vi.clearAllMocks();

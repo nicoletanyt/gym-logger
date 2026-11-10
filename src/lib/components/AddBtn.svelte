@@ -7,6 +7,7 @@
 </script>
 
 <Button
+    aria-label="Add"
     class={cn(
         buttonVariants({ variant: "default", size: "icon-lg" }),
         "fixed bottom-24 right-11 z-10 size-11",

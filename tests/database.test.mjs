@@ -5,7 +5,19 @@ import { PGlite } from "@electric-sql/pglite";
 import { Client } from "pg";
 
 // Real PostgreSQL in WASM; no Docker, network, keys, or live accounts required.
-// Only auth.users/auth.uid() are stand-ins for Supabase's managed Auth schema.
+// Auth and Storage tables are minimal stand-ins for Supabase-managed schemas.
+const storageSetup = `
+    create schema storage;
+    create table storage.buckets (id text primary key, name text, public boolean, file_size_limit bigint, allowed_mime_types text[]);
+    create table storage.objects (bucket_id text, name text);
+    alter table storage.objects enable row level security;
+    create function storage.foldername(name text) returns text[] language sql immutable as $$
+        select (string_to_array(name, '/'))[1:array_length(string_to_array(name, '/'), 1)-1]
+    $$;
+    grant usage on schema storage to authenticated;
+    grant select, insert, delete on storage.objects to authenticated;
+    grant execute on function storage.foldername(text) to authenticated;
+`;
 const postgresUrl = process.env.TEST_POSTGRES_URL;
 if (postgresUrl && !["127.0.0.1", "localhost", "[::1]"].includes(new URL(postgresUrl).hostname)) {
     throw new Error("TEST_POSTGRES_URL must point to a disposable loopback PostgreSQL database");
@@ -91,6 +103,7 @@ before(async () => {
         grant usage on schema auth, public to anon, authenticated;
         grant execute on function auth.uid() to anon, authenticated;
     `);
+    await db.exec(storageSetup);
     const migrations = new URL("../supabase/migrations/", import.meta.url);
     for (const file of (await readdir(migrations)).filter((file) => file.endsWith(".sql")).sort()) {
         await db.exec(await readFile(new URL(file, migrations), "utf8"));
@@ -137,6 +150,17 @@ test("all tables hide another account's rows, including child records", async ()
     for (const table of ["exercises", "routines", "sessions", "routine_exercises", "session_exercises"]) {
         assert.deepEqual((await rows(`select user_id from public.${table}`)).map((row) => row.user_id), [A]);
     }
+});
+
+test("exercise image objects are private to their owner and bucket", async () => {
+    await db.query("insert into storage.objects values ('exercise-images', $1)", [`${A}/photo.jpg`]);
+    await fails(() => db.query("insert into storage.objects values ('exercise-images', $1)", [`${B}/photo.jpg`]), "42501");
+    await fails(() => db.query("insert into storage.objects values ('other', $1)", [`${A}/photo.jpg`]), "42501");
+    await asUser(B);
+    assert.deepEqual(await rows("select * from storage.objects"), []);
+    await db.query("delete from storage.objects where name = $1", [`${A}/photo.jpg`]);
+    await asUser(A);
+    assert.equal((await rows("select * from storage.objects")).length, 1);
 });
 
 test("anonymous clients have no table or RPC access", async () => {
@@ -421,6 +445,7 @@ test("upgrading an existing database backfills names without changing record ide
             create schema auth; create table auth.users (id uuid primary key);
             create function auth.uid() returns uuid language sql stable as $$ select null::uuid $$;
         `);
+        await upgrade.exec(storageSetup);
         const migrations = new URL("../supabase/migrations/", import.meta.url);
         const files = (await readdir(migrations)).filter((file) => file.endsWith(".sql")).sort();
         await upgrade.exec(await readFile(new URL(files[0], migrations), "utf8"));

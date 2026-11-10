@@ -3,6 +3,24 @@ import { type Result } from "./constants";
 import { v4 as uuidv4 } from "uuid";
 import { cloud } from "./cloud.svelte";
 import { saveExercise } from "./workout-repository";
+import { IMAGE_BUCKET, STORAGE_PREFIX, uploadExerciseImage } from "./exercise-images";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "./database.types";
+
+async function saveWithImage(client: SupabaseClient<Database>, owner: string | null, value: Exercise, file: File | null, create = false) {
+    const uploaded = file && owner ? await uploadExerciseImage(client, owner, file) : null;
+    if (uploaded) value.imageLink = uploaded;
+    try {
+        await saveExercise(client, value, create);
+    } catch (error) {
+        // Only a confirmed conflict proves the RPC did not commit. A network error
+        // could arrive after commit, so never delete the image in that case.
+        if (uploaded && (error as { code?: string }).code === 'PT409') {
+            try { await client.storage.from(IMAGE_BUCKET).remove([uploaded.slice(STORAGE_PREFIX.length)]); } catch { /* best effort */ }
+        }
+        throw error;
+    }
+}
 
 export interface BaseMetric {
     sets: number;
@@ -41,7 +59,7 @@ export const METRICS = {
 export interface Exercise {
     id: string;
     name: string;
-    imageLink?: string; // TODO:
+    imageLink?: string;
     note?: string;
     metricType: MetricType;
     archived?: boolean;
@@ -139,10 +157,11 @@ class ExerciseManager {
     getById(id: string): Exercise | undefined {
         return cloud.data.exercises.find((e) => e.id == id);
     }
-    async addExercise(newExercise: Exercise): Promise<Result> {
+    async addExercise(newExercise: Exercise, imageFile: File | null = null): Promise<Result> {
         if (!newExercise.name.trim()) return { success: false, message: "Exercise name is required." };
         const value = $state.snapshot(newExercise);
-        return cloud.mutate((client) => saveExercise(client, value, true));
+        const owner = cloud.ownerId;
+        return cloud.mutate((client) => saveWithImage(client, owner, value, imageFile, true));
     }
     async removeExercises(ids: string[]): Promise<Result> {
         return cloud.mutate(async (client) => {
@@ -150,9 +169,11 @@ class ExerciseManager {
             if (error) throw error;
         });
     }
-    async updateExercise(updated: Exercise): Promise<Result> {
+    async updateExercise(updated: Exercise, imageFile: File | null = null): Promise<Result> {
+        if (!updated.name.trim()) return { success: false, message: "Exercise name is required." };
         const value = $state.snapshot(updated);
-        return cloud.mutate((client) => saveExercise(client, value));
+        const owner = cloud.ownerId;
+        return cloud.mutate((client) => saveWithImage(client, owner, value, imageFile));
     }
 }
 

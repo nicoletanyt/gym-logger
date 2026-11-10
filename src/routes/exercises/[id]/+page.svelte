@@ -5,6 +5,9 @@
     import MetricTypeTag from "$lib/components/MetricTypeTag.svelte";
     import CardStat from "$lib/components/CardStat.svelte";
     import ConfirmDialog from "$lib/components/ConfirmDialog.svelte";
+    import ExerciseImage from "$lib/components/ExerciseImage.svelte";
+    import ExerciseImagePicker from "$lib/components/ExerciseImagePicker.svelte";
+    import { cloud } from "$lib/cloud.svelte";
     import AreaChart from "$lib/components/charts/AreaChart.svelte";
     import Button from "$lib/components/ui/button/button.svelte";
     import Input from "$lib/components/ui/input/input.svelte";
@@ -25,15 +28,19 @@
 
     let isEdit = $state(false);
     let draftName = $state("");
+    let draftImage = $state("");
+    let imageFile = $state<File | null>(null);
     let editRevision = $state<number | undefined>();
 
     async function toggleEdit() {
         if (!exercise) return;
         if (isEdit) {
-            const result = await exerciseManager.updateExercise({ ...exercise, name: draftName, revision: editRevision });
+            const result = await exerciseManager.updateExercise({ ...exercise, name: draftName, imageLink: draftImage, revision: editRevision }, imageFile);
             if (!result.success) { alert(result.message); return; }
         } else {
             draftName = exercise.name;
+            draftImage = exercise.imageLink ?? "";
+            imageFile = null;
             editRevision = exercise.revision;
         }
         isEdit = !isEdit;
@@ -204,6 +211,7 @@
             </ConfirmDialog>
             <Button
                 variant={"outline"}
+                disabled={cloud.saving || cloud.loading || cloud.needsReload}
                 onclick={() => {
                     toggleEdit();
                 }}
@@ -222,6 +230,11 @@
         <h1>{exercise.name}</h1>
     {/if}
     <MetricTypeTag metric={METRICS[exercise.metricType]} />
+    {#if isEdit}
+        <ExerciseImagePicker bind:imageLink={draftImage} bind:file={imageFile} />
+    {:else}
+        <ExerciseImage src={exercise.imageLink} alt={`${exercise.name} image`} class="mt-4 h-48 w-full rounded-lg" />
+    {/if}
 </header>
 
 {#if sessionEntries.length == 0}
