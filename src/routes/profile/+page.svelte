@@ -13,9 +13,11 @@
     import { Input } from "$lib/components/ui/input/index.js";
     import { Label } from "$lib/components/ui/label/index.js";
     import FieldIcon from "$lib/components/FieldIcon.svelte";
+    import { createCloudBackup, createLocalBackup, downloadBackup } from "$lib/backup";
 
     let signingOut = $state(false);
     let error = $state("");
+    let exportError = $state("");
     let hasLegacyData = $state(false);
     let appearance = $state<ThemePreference>("system");
     const appearanceOptions = [{ value: "system", label: "System", icon: Monitor }, { value: "light", label: "Light", icon: Sun }, { value: "dark", label: "Dark", icon: Moon }] as const;
@@ -30,21 +32,17 @@
         catch { /* Browser storage may be disabled; cloud storage still works. */ }
         return () => window.removeEventListener("storage", onStorage);
     });
-    function download(value: unknown, name: string) {
-        const url = URL.createObjectURL(new Blob([JSON.stringify(value, null, 2)], { type: "application/json" }));
-        const anchor = document.createElement("a");
-        anchor.href = url; anchor.download = name;
-        document.body.append(anchor); anchor.click(); anchor.remove();
-        URL.revokeObjectURL(url);
-    }
     function exportCloud() {
-        download({ version: 1, exportedAt: new Date().toISOString(), ...$state.snapshot(cloud.data) }, "gym-logger-backup.json");
+        exportError = "";
+        if (!cloud.ready || cloud.loading || cloud.saving || cloud.needsReload) { exportError = "Load the latest cloud data before exporting."; return; }
+        try { downloadBackup(createCloudBackup($state.snapshot(cloud.data)), "gym-logger-backup.json"); }
+        catch { exportError = "Could not export cloud data. No data was changed."; }
     }
     function exportLegacy() {
+        exportError = "";
         try {
-            const data = Object.fromEntries(Object.entries(STORAGE_KEYS).map(([name, key]) => [name, JSON.parse(localStorage.getItem(key) ?? "null")]));
-            download({ version: "legacy-local", ...data }, "gym-logger-local-backup.json");
-        } catch { error = "Could not read the existing browser backup. No data was changed."; }
+            downloadBackup(createLocalBackup(localStorage), "gym-logger-local-backup.json");
+        } catch { exportError = "Could not read the existing browser backup. No data was changed."; }
     }
     async function signOut() {
         if (signingOut) return;
@@ -107,13 +105,14 @@
         <Upload aria-hidden="true" />
         Import Data
     </Button>
-    <Button onclick={exportCloud} variant="secondary" class="h-auto min-h-12 w-full justify-start gap-3 whitespace-normal px-4 py-3 text-left"><Download aria-hidden="true" /> Export Cloud Data</Button>
+    <Button onclick={exportCloud} disabled={!cloud.ready || cloud.loading || cloud.saving || cloud.needsReload} variant="secondary" class="h-auto min-h-12 w-full justify-start gap-3 whitespace-normal px-4 py-3 text-left"><Download aria-hidden="true" /> Export Cloud Data</Button>
     {#if hasLegacyData}
         <div class="rounded-xl border p-4 space-y-3">
             <p class="text-sm text-muted-foreground">Previous workout data is still in this browser. It has not been uploaded or deleted. Download a backup for your later migration.</p>
             <Button onclick={exportLegacy} variant="outline" class="h-auto min-h-12 w-full justify-start gap-3 whitespace-normal px-4 py-3 text-left"><Download aria-hidden="true" /> Download Previous Browser Data</Button>
         </div>
     {/if}
+    {#if exportError}<p role="alert" class="text-sm text-destructive">{exportError}</p>{/if}
 </section>
 
 <section class="my-8 gap-3 space-y-0">

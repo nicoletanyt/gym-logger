@@ -212,6 +212,84 @@ test("profile sign out returns to sign in", async ({ page }) => {
     await expect(page).toHaveURL(/\/sign-in/);
 });
 
+test("JSON backup uploads validate and complete in a dismissible dialog", async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 850 });
+    await mockSignIn(page);
+    await page.getByRole("button", { name: "Profile" }).click();
+    await page.getByRole("button", { name: "Import Data" }).click();
+    const input = page.getByLabel("Backup file");
+    await expect(page.getByRole("button", { name: "Upload", exact: true })).toBeVisible();
+    await input.setInputFiles({ name: "bad.json", mimeType: "application/json", buffer: Buffer.from("{") });
+    await expect(page.getByRole("alert")).toContainText("not valid JSON");
+    await expect(page.getByRole("button", { name: "Import backup" })).toBeDisabled();
+    for (const version of [1, "legacy-local"]) {
+        await input.setInputFiles({ name: "backup.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify({ version, exercises: [], routines: [], sessions: {} })) });
+        await expect(page.getByText("0 exercises · 0 routines · 0 sessions")).toBeVisible();
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+        await page.screenshot({ path: test.info().outputPath(`backup-preview-${version}.png`), animations: "disabled" });
+        await page.getByRole("button", { name: "Import backup" }).click();
+        const dialog = page.getByRole("dialog", { name: "Import complete" });
+        await expect(dialog).toContainText("Added 0 exercises, 0 routines and 0 sessions");
+        await page.screenshot({ path: test.info().outputPath(`backup-complete-${version}.png`), animations: "disabled" });
+        await dialog.getByRole("button", { name: "Done" }).click();
+        await expect(dialog).not.toBeVisible();
+    }
+});
+
+test("local export round-trips through JSON import without changing browser storage", async ({ page }) => {
+    await mockSignIn(page);
+    const stored = { EXERCISES_STORED: "[]", ROUTINES_STORED: "[]", SESSIONS_STORED: "{}" };
+    await page.evaluate((stored) => { for (const [key, value] of Object.entries(stored)) localStorage.setItem(key, value); }, stored);
+    await page.getByRole("button", { name: "Profile" }).click();
+    const downloaded = page.waitForEvent("download");
+    await page.getByRole("button", { name: "Download Previous Browser Data" }).click();
+    const download = await downloaded;
+    const chunks: Buffer[] = [];
+    for await (const chunk of (await download.createReadStream())!) chunks.push(Buffer.from(chunk));
+    const buffer = Buffer.concat(chunks);
+    expect(JSON.parse(buffer.toString())).toMatchObject({ version: "legacy-local", exercises: [], routines: [], sessions: {} });
+    expect(await page.evaluate((keys) => Object.fromEntries(keys.map((key) => [key, localStorage.getItem(key)])), Object.keys(stored))).toEqual(stored);
+    await page.getByRole("button", { name: "Import Data" }).click();
+    await page.getByLabel("Backup file").setInputFiles({ name: download.suggestedFilename(), mimeType: "application/json", buffer });
+    await expect(page.getByText("Previous browser-data backup", { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Import backup" }).click();
+    await expect(page.getByRole("dialog", { name: "Import complete" })).toBeVisible();
+});
+
+test("nonempty backups save exercises before routines and sessions and skip repeat imports", async ({ page }) => {
+    await mockSignIn(page);
+    const exerciseId = "00000000-0000-4000-8000-000000000010";
+    const routineId = "00000000-0000-4000-8000-000000000011";
+    const sessionId = "00000000-0000-4000-8000-000000000012";
+    const entry = { id: "00000000-0000-4000-8000-000000000013", exerciseId, metric: { type: "weight", sets: 3, reps: 10, weight: 20 } };
+    const backup = { version: 1, exercises: [{ id: exerciseId, name: "Press", metricType: "weight" }], routines: [{ id: routineId, name: "Day one", exercises: [entry] }], sessions: { [sessionId]: { id: sessionId, date: "2026-11-10", duration: 600, routineId, exercises: [entry] } } };
+    const saved: Record<string, unknown[]> = { exercises: [], routines: [], sessions: [] };
+    const methods: string[] = [];
+    const rowEntry = { id: entry.id, exercise_id: exerciseId, position: 0, metric_type: "weight", sets: 3, reps: 10, weight_kg: 20, exercise_name_snapshot: "Press" };
+    await page.route("**/rest/v1/**", async (route) => {
+        const path = new URL(route.request().url()).pathname;
+        const method = path.split("/").at(-1)!;
+        if (path.includes("/rpc/")) {
+            methods.push(method);
+            if (method === "save_exercise") saved.exercises.push({ id: exerciseId, name: "Press", metric_type: "weight", archived: false, revision: 1 });
+            if (method === "save_routine") saved.routines.push({ id: routineId, name: "Day one", revision: 1, routine_exercises: [rowEntry] });
+            if (method === "save_session") saved.sessions.push({ id: sessionId, workout_date: "2026-11-10", duration_seconds: 600, routine_id: routineId, revision: 1, created_at: "2026-11-10T12:00:00Z", session_exercises: [rowEntry] });
+            return route.fulfill({ status: 200, contentType: "application/json", body: "{}" });
+        }
+        return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(saved[method] ?? []) });
+    });
+    await page.getByRole("button", { name: "Profile" }).click();
+    await page.getByRole("button", { name: "Import Data" }).click();
+    for (const expected of ["Added 1 exercises, 1 routines and 1 sessions", "Skipped 3 existing records"]) {
+        await page.getByLabel("Backup file").setInputFiles({ name: "backup.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(backup)) });
+        await page.getByRole("button", { name: "Import backup" }).click();
+        const dialog = page.getByRole("dialog", { name: "Import complete" });
+        await expect(dialog).toContainText(expected);
+        await dialog.getByRole("button", { name: "Done" }).click();
+    }
+    expect(methods).toEqual(["save_exercise", "save_routine", "save_session"]);
+});
+
 test("exercise image picker supports library selection and upload validation", async ({ page }) => {
     await mockSignIn(page);
     await page.getByRole('link', { name: 'Exercises', exact: true }).click();

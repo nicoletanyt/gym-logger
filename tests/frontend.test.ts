@@ -13,6 +13,7 @@ import { cloud, cloudError, WORKOUT_LOAD_TIMEOUT_MS } from "../src/lib/cloud.sve
 import { mapEntry, mapSession, saveSession } from "../src/lib/workout-repository";
 import { compareSessions, sessionManager } from "../src/lib/Session.svelte";
 import { parseImportText } from "../src/lib/importer";
+import { createLocalBackup, createCloudBackup, parseBackup, importBackup } from "../src/lib/backup";
 import { libraryImages, MAX_IMAGE_SIZE, uploadExerciseImage, validateImage } from "../src/lib/exercise-images";
 
 const empty = () => ({ exercises: [], routines: [], sessions: {} });
@@ -102,6 +103,97 @@ describe("existing text import format", () => {
         const parsed = parseImportText("9/8 Bicep curl 12kg x10, 3 sets\nduration: 30mins\n9/8 Run 8km/h for 15mins\nduration: 20mins", 2026);
         expect(parsed).toHaveLength(2);
         expect(parsed[0].date).toBe(parsed[1].date);
+    });
+});
+
+describe("JSON backups", () => {
+    const exerciseId = "00000000-0000-4000-8000-000000000010";
+    const routineId = "00000000-0000-4000-8000-000000000011";
+    const sessionId = "00000000-0000-4000-8000-000000000012";
+    const entry = { id: "00000000-0000-4000-8000-000000000013", exerciseId, metric: { type: "weight" as const, sets: 3, weight: 20, reps: 10 } };
+    const data = () => ({ exercises: [{ id: exerciseId, name: "Press", metricType: "weight" as const }], routines: [{ id: routineId, name: "Day one", exercises: [entry] }], sessions: { [sessionId]: { id: sessionId, date: "2026-11-10", duration: 1800, routineId, exercises: [entry] } } });
+
+    it("round-trips cloud exports with their original IDs and values", () => {
+        const original = data();
+        const parsed = parseBackup(JSON.stringify(createCloudBackup(original)));
+        expect(parsed).toMatchObject({ ...original, source: "cloud", warnings: [] });
+    });
+    it("exports local data without writing or normalizing the original storage", () => {
+        const original = data();
+        const values: Record<string, string> = { EXERCISES_STORED: JSON.stringify(original.exercises), ROUTINES_STORED: JSON.stringify(original.routines), SESSIONS_STORED: JSON.stringify({ "2026-11-10": original.sessions[sessionId] }) };
+        const storage = { getItem: vi.fn((key: string) => values[key] ?? null) };
+        const exported = createLocalBackup(storage);
+        expect(exported).toMatchObject({ version: "legacy-local", sessions: { "2026-11-10": original.sessions[sessionId] } });
+        expect(parseBackup(JSON.stringify(exported))).toMatchObject({ ...original, source: "local" });
+        expect(() => createLocalBackup({ getItem: () => "{" })).toThrow();
+    });
+    it("normalizes legacy null collections, date keys and entries without IDs", () => {
+        expect(parseBackup(JSON.stringify({ version: "legacy-local", exercises: null, routines: null, sessions: null }))).toMatchObject({ exercises: [], routines: [], sessions: {} });
+        const { id, ...oldEntry } = entry;
+        const original = data();
+        const text = JSON.stringify({ version: "legacy-local", ...original, routines: [{ ...original.routines[0], exercises: [oldEntry] }], sessions: { "2026-11-10": { ...original.sessions[sessionId], exercises: [oldEntry] } } });
+        const first = parseBackup(text), second = parseBackup(text);
+        expect(first.routines[0].exercises[0].id).toBe(second.routines[0].exercises[0].id);
+        expect(first.routines[0].exercises[0].id).not.toBe(first.sessions[sessionId].exercises[0].id);
+        expect(first.routines[0].exercises[0].metric).toEqual(entry.metric);
+    });
+    it("preserves legacy sessions with duplicate IDs using stable replacements", () => {
+        const original = data();
+        const text = JSON.stringify({ version: "legacy-local", ...original, sessions: { "2026-11-10": original.sessions[sessionId], "2026-11-11": { ...original.sessions[sessionId], date: "2026-11-11" } } });
+        const first = parseBackup(text);
+        expect(Object.keys(first.sessions)).toHaveLength(2);
+        expect(Object.keys(first.sessions)).toEqual(Object.keys(parseBackup(text).sessions));
+        expect(first.warnings[0]).toContain("duplicate ID");
+    });
+    it("warns about deleted legacy routines but never invents missing exercises", () => {
+        const original = data();
+        const parsed = parseBackup(JSON.stringify({ version: "legacy-local", ...original, routines: [] }));
+        expect(parsed.sessions[sessionId].routineId).toBe("custom");
+        expect(parsed.warnings[0]).toContain("deleted routine");
+        expect(() => parseBackup(JSON.stringify({ version: "legacy-local", ...original, exercises: [] }))).toThrow(/missing from the backup/);
+    });
+    it("rejects invalid JSON, versions, dates and metrics before writing", () => {
+        expect(() => parseBackup("{")).toThrow(/valid JSON/);
+        expect(() => parseBackup(JSON.stringify({ version: 2 }))).toThrow(/cloud or previous/);
+        const original = data();
+        original.sessions[sessionId].date = "2026-02-30";
+        expect(() => parseBackup(JSON.stringify(createCloudBackup(original)))).toThrow(/invalid session/);
+        original.sessions[sessionId].date = "2026-11-10";
+        const invalid = JSON.parse(JSON.stringify(createCloudBackup(original)));
+        invalid.routines[0].exercises[0].metric.reps = 0;
+        expect(() => parseBackup(JSON.stringify(invalid))).toThrow(/invalid exercise metrics/);
+    });
+    it("imports in dependency order, skips existing records, and drops source revisions", async () => {
+        const rpc = vi.fn().mockResolvedValue({ error: null });
+        mocks.getAccountClient.mockResolvedValue({ rpc });
+        await cloud.setUser("user-a");
+        const parsed = parseBackup(JSON.stringify(createCloudBackup(data())));
+        expect(await importBackup(parsed)).toMatchObject({ exercises: 1, routines: 1, sessions: 1, skipped: 0 });
+        expect(rpc.mock.calls.map(([method]) => method)).toEqual(["save_exercise", "save_routine", "save_session"]);
+        for (const [, args] of rpc.mock.calls) expect(args).not.toHaveProperty("p_expected_revision");
+        cloud.data = { exercises: parsed.exercises, routines: parsed.routines, sessions: parsed.sessions };
+        rpc.mockClear();
+        expect(await importBackup(parsed)).toMatchObject({ exercises: 0, routines: 0, sessions: 0, skipped: 3 });
+        expect(rpc).not.toHaveBeenCalled();
+    });
+    it("reports partial imports and stops if refreshing saved data fails", async () => {
+        const rpc = vi.fn().mockResolvedValue({ error: null });
+        mocks.getAccountClient.mockResolvedValue({ rpc });
+        await cloud.setUser("user-a");
+        mocks.fetchWorkouts.mockRejectedValueOnce(new Error("Read failed"));
+        await expect(importBackup(parseBackup(JSON.stringify(createCloudBackup(data()))))).rejects.toThrow(/adding 1 exercises, 0 routines and 0 sessions/);
+        expect(rpc).toHaveBeenCalledTimes(1);
+        expect(cloud.needsReload).toBe(true);
+    });
+    it("archives imported archived exercises and removes foreign-account image references", async () => {
+        const rpc = vi.fn().mockResolvedValue({ error: null });
+        mocks.getAccountClient.mockResolvedValue({ rpc });
+        await cloud.setUser("user-a");
+        const exercise = { ...data().exercises[0], archived: true, imageLink: "storage:exercise-images/other/photo.jpg" };
+        const parsed = parseBackup(JSON.stringify(createCloudBackup({ exercises: [exercise], routines: [], sessions: {} })));
+        expect(await importBackup(parsed)).toMatchObject({ exercises: 1, imagesOmitted: 1 });
+        expect(rpc.mock.calls[0][1].p_exercise.imageLink).toBe("");
+        expect(rpc.mock.calls[1]).toEqual(["archive_exercises", { p_ids: [exerciseId] }]);
     });
 });
 

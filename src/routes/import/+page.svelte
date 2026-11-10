@@ -1,124 +1,95 @@
 <script lang="ts">
     import BackBtn from "$lib/components/BackBtn.svelte";
     import Button from "$lib/components/ui/button/button.svelte";
-    import { Textarea } from "$lib/components/ui/textarea/index.js";
     import * as Dialog from "$lib/components/ui/dialog/index.js";
-    import { importText, type ImportResult } from "$lib/importer";
-    import { FileText } from "@lucide/svelte";
-    import FieldIcon from "$lib/components/FieldIcon.svelte";
+    import { cloud } from "$lib/cloud.svelte";
+    import { importBackup, parseBackup, MAX_BACKUP_BYTES, type Backup, type ImportResult } from "$lib/backup";
+    import { Check, FileJson, Upload } from "@lucide/svelte";
 
-    let text = $state("");
+    let fileInput = $state<HTMLInputElement>();
+    let filename = $state("");
+    let backup = $state<Backup | null>(null);
     let result = $state<ImportResult | null>(null);
-
-    let showDialog = $state(false);
-    let errorMsg = $state("");
-    let showError = $state(false);
-    let desc = $state("");
+    let error = $state("");
     let busy = $state(false);
+    let reading = $state(false);
+    let showResult = $state(false);
+    let selection = 0;
 
-    function plural(n: number, word: string): string {
-        return `${n} ${word}${n == 1 ? "" : "s"}`;
+    async function chooseFile(event: Event) {
+        const input = event.currentTarget as HTMLInputElement;
+        const file = input.files?.[0];
+        input.value = "";
+        if (!file) return;
+        const current = ++selection;
+        filename = file.name; backup = null; result = null; error = "";
+        if (file.size > MAX_BACKUP_BYTES) { error = "Choose a backup no larger than 10 MB."; return; }
+        reading = true;
+        try {
+            const parsed = parseBackup(await file.text());
+            if (current === selection) backup = parsed;
+        } catch (failure) {
+            if (current === selection) error = failure instanceof Error ? failure.message : "Could not read this file.";
+        } finally { if (current === selection) reading = false; }
     }
 
     async function handleImport() {
-        if (busy) return;
-        if (!text.trim()) {
-            errorMsg = "Paste some session data first.";
-            showError = true;
-            return;
-        }
-        busy = true;
+        if (!backup || busy || reading) return;
+        busy = true; error = ""; result = null;
         try {
-            result = await importText(text);
-            if (result.sessionsAdded === 0) {
-                errorMsg =
-                    "No sessions were imported. Make sure each session starts with a date like 9/8.";
-                showError = true;
-            } else {
-                text = "";
-                showDialog = true;
-                desc =
-                    result.exercisesAdded > 0
-                        ? `${plural(result.exercisesAdded, "exercise")} and ${plural(result.sessionsAdded, "session")} were created.`
-                        : `${plural(result.sessionsAdded, "session")} were created.`;
-            }
-        } catch (err) {
-            errorMsg = (err as Error).message;
-            showError = true;
+            result = await importBackup(backup);
+            backup = null;
+            showResult = true;
+        } catch (failure) {
+            error = failure instanceof Error ? failure.message : "Could not import this backup.";
         } finally { busy = false; }
     }
 </script>
 
-<div class="h-full flex flex-col">
-    <header class="shrink-0">
+<div class="mx-auto w-full max-w-2xl pb-8">
+    <header class="mt-4 mb-8">
         <div class="flex items-center gap-4">
-        <BackBtn dest={"/profile"} />
-        <h1 class="min-w-0 text-2xl sm:text-3xl">Import Data</h1>
+            <BackBtn dest="/profile" />
+            <h1 class="min-w-0 text-2xl sm:text-3xl">Import Data</h1>
         </div>
-        <p class="text-muted-foreground">Paste your session data in.</p>
-        <p class="text-muted-foreground text-sm">
-            Format: start each session with a date (day/month), then list one
-            exercise per line with values like
-            <code class="text-foreground">7kg x10, 3 sets</code> or
-            <code class="text-foreground">8.5km/h for 15mins</code>, and end
-            every session with
-            <code class="text-foreground">duration: 43mins</code> (or
-            <code class="text-foreground">total:</code>) for the session length
-            — sessions without it cannot be imported.
-        </p>
+        <p class="mt-4 text-sm text-muted-foreground">Upload a cloud backup from this account or a previous browser-data backup. Existing records with matching IDs are skipped, not replaced. Your browser backup is never deleted.</p>
     </header>
-
-    <FieldIcon icon={FileText} multiline class="mt-2 flex-1 min-h-0">
-    <Textarea
-        class="h-full min-h-0 pl-10"
-        style="field-sizing: fixed"
-        bind:value={text}
-        disabled={busy}
-        aria-label="Session data"
-        placeholder={"e.g.\n9/8 bicep curls machine 7kg x10, 3 sets\nduration: 43mins"}
-    />
-    </FieldIcon>
-    <Button variant="success" class="w-full mt-3" onclick={handleImport} disabled={busy}>
-        {busy ? "Importing to Supabase…" : "Import"}
-    </Button>
+    <section class="space-y-4">
+        <div class="space-y-2">
+            <p class="text-sm font-medium">Backup file</p>
+            <Button type="button" variant="outline" class="min-h-11 gap-2" onclick={() => fileInput?.click()} disabled={busy || reading}><Upload aria-hidden="true" /> Upload</Button>
+            <input bind:this={fileInput} aria-label="Backup file" type="file" accept=".json,application/json" onchange={chooseFile} disabled={busy || reading} class="sr-only" />
+            <p class="text-sm text-muted-foreground">JSON files up to 10 MB. Uploaded image files are not included in backups. Imported historical names may reflect the current exercise and routine names.</p>
+        </div>
+        {#if reading}<p role="status" class="text-sm text-muted-foreground">Reading backup…</p>{/if}
+        {#if backup}
+            <div class="rounded-md border bg-card p-4 text-sm" aria-live="polite">
+                <p class="flex items-center gap-2 font-medium"><FileJson aria-hidden="true" class="size-4 shrink-0" /><span class="min-w-0 break-all">{filename}</span></p>
+                <p class="mt-2 text-muted-foreground">{backup.source === "local" ? "Previous browser-data backup" : "Cloud backup"}</p>
+                <p class="mt-1 text-muted-foreground">{backup.exercises.length} exercises · {backup.routines.length} routines · {Object.keys(backup.sessions).length} sessions</p>
+                {#if backup.warnings.length}
+                    <ul class="mt-3 list-disc space-y-1 pl-4 text-muted-foreground">{#each backup.warnings as warning}<li>{warning}</li>{/each}</ul>
+                {/if}
+            </div>
+        {/if}
+        {#if error}<p role="alert" class="text-sm text-destructive">{error}</p>{/if}
+        <Button variant="success" class="min-h-11 w-full gap-2" onclick={handleImport} disabled={!backup || reading || busy || cloud.loading || cloud.saving || cloud.needsReload || !cloud.ready}>
+            <Upload aria-hidden="true" /> {busy ? "Importing…" : "Import backup"}
+        </Button>
+    </section>
 </div>
 
-<Dialog.Root bind:open={showError}>
+<Dialog.Root bind:open={showResult}>
     <Dialog.Content>
         <Dialog.Header>
-            <Dialog.Title>Import Failed</Dialog.Title>
-            <Dialog.Description>{errorMsg}</Dialog.Description>
-        </Dialog.Header>
-        <Dialog.Footer>
-            <Button
-                variant="outline"
-                onclick={() => {
-                    showError = false;
-                }}
-            >
-                OK
-            </Button>
-        </Dialog.Footer>
-    </Dialog.Content>
-</Dialog.Root>
-
-<Dialog.Root bind:open={showDialog}>
-    <Dialog.Content>
-        <Dialog.Header>
-            <Dialog.Title>Imported Successfully</Dialog.Title>
+            <Dialog.Title>Import complete</Dialog.Title>
             <Dialog.Description>
-                {desc}
+                {#if result}
+                    Added {result.exercises} exercises, {result.routines} routines and {result.sessions} sessions. Skipped {result.skipped} existing records.
+                    {#if result.imagesOmitted} {result.imagesOmitted} image references belonged to another account and were omitted.{/if}
+                {/if}
             </Dialog.Description>
         </Dialog.Header>
-        <Dialog.Footer>
-            <Button
-                variant="success"
-                onclick={() => {
-                    showDialog = false;
-                }}
-            >
-                Done
-            </Button>
-        </Dialog.Footer>
+        <Dialog.Footer><Button variant="success" onclick={() => { showResult = false; }}><Check aria-hidden="true" /> Done</Button></Dialog.Footer>
     </Dialog.Content>
 </Dialog.Root>
