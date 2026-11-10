@@ -1,13 +1,14 @@
 <script lang="ts">
     import { goto } from "$app/navigation";
     import { page } from "$app/state";
-    import { Dumbbell, ArrowRight, Check, Eye, EyeOff, LockKeyhole } from "@lucide/svelte";
+    import { Dumbbell, ArrowRight, Check, Eye, EyeOff, LockKeyhole, Mail } from "@lucide/svelte";
     import Button from "$lib/components/ui/button/button.svelte";
     import Input from "$lib/components/ui/input/input.svelte";
     import Label from "$lib/components/ui/label/label.svelte";
     import { getSupabase } from "$lib/supabase";
     import { safeNext } from "$lib/auth";
     import { onMount } from "svelte";
+    import FieldIcon from "$lib/components/FieldIcon.svelte";
 
     let mode = $state<"sign-in" | "sign-up" | "recover">("sign-in");
     let email = $state("");
@@ -91,15 +92,15 @@
 
             <form onsubmit={submit} class="space-y-5" aria-busy={busy}>
                 <fieldset disabled={busy || !ready} class="space-y-5 min-w-0">
-                    <div class="space-y-2"><Label for="email">Email address</Label><Input id="email" type="email" autocomplete="email" required bind:value={email} placeholder="you@example.com" class="h-12" /></div>
+                    <div class="space-y-2"><Label for="email">Email address</Label><FieldIcon icon={Mail}><Input id="email" type="email" autocomplete="email" required bind:value={email} placeholder="you@example.com" class="h-12 pl-10" /></FieldIcon></div>
                     {#if mode !== "recover"}
                         <div class="space-y-2">
                             <div class="flex justify-between"><Label for="password">Password</Label>{#if mode === "sign-in"}<button type="button" class="text-xs text-muted-foreground hover:text-foreground" onclick={() => switchMode("recover")}>Forgot password?</button>{/if}</div>
-                            <div class="relative"><Input id="password" type={showPassword ? "text" : "password"} autocomplete={mode === "sign-up" ? "new-password" : "current-password"} required minlength={mode === "sign-up" ? 8 : undefined} bind:value={password} class="h-12 pr-12" /><button type="button" class="absolute inset-y-0 right-3 text-muted-foreground" aria-label={showPassword ? "Hide password" : "Show password"} onclick={() => showPassword = !showPassword}>{#if showPassword}<EyeOff class="size-4" />{:else}<Eye class="size-4" />{/if}</button></div>
+                            <FieldIcon icon={LockKeyhole}><Input id="password" type={showPassword ? "text" : "password"} autocomplete={mode === "sign-up" ? "new-password" : "current-password"} required minlength={mode === "sign-up" ? 8 : undefined} bind:value={password} class="h-12 pr-12 pl-10" /><button type="button" class="absolute inset-y-0 right-3 text-muted-foreground" aria-label={showPassword ? "Hide password" : "Show password"} onclick={() => showPassword = !showPassword}>{#if showPassword}<EyeOff class="size-4" />{:else}<Eye class="size-4" />{/if}</button></FieldIcon>
                             {#if mode === "sign-up"}<p class="text-xs text-muted-foreground">Use at least 8 characters.</p>{/if}
                         </div>
                     {/if}
-                    {#if mode === "sign-up"}<div class="space-y-2"><Label for="confirm-password">Confirm password</Label><Input id="confirm-password" type="password" autocomplete="new-password" required minlength={8} bind:value={confirmation} class="h-12" /></div>{/if}
+                    {#if mode === "sign-up"}<div class="space-y-2"><Label for="confirm-password">Confirm password</Label><FieldIcon icon={LockKeyhole}><Input id="confirm-password" type="password" autocomplete="new-password" required minlength={8} bind:value={confirmation} class="h-12 pl-10" /></FieldIcon></div>{/if}
                     <Button type="submit" disabled={busy} class="h-12 w-full bg-green-300 text-zinc-950 hover:bg-green-400 font-semibold">{busy ? "Please wait…" : mode === "sign-up" ? "Create account" : mode === "recover" ? "Send reset link" : "Sign in"}{#if !busy}<ArrowRight class="size-4" />{/if}</Button>
                 </fieldset>
             </form>

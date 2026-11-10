@@ -7,6 +7,24 @@ data is never automatically uploaded or deleted.
 
 ## Model and security
 
+### Exercise images
+
+The deployed migration `20261110120000_exercise_images.sql` creates the private
+`exercise-images` Storage bucket and ownership policies. Uploads are limited to
+5 MiB and JPEG, PNG, or WebP. The database stores a `storage:exercise-images/`
+reference in `exercises.image_link`; the file is stored in Supabase Storage under
+the user's UUID. The client uses short-lived signed URLs. Bundled library images
+are local files with attribution in `static/exercise-images/CREDITS.md`; existing
+external image URLs remain supported.
+
+Storage and database writes cannot share a transaction. Confirmed revision
+conflicts trigger best-effort cleanup of a new upload, but network failures may
+leave unreferenced files. Replaced and archived images are retained to avoid
+breaking historical records or racing concurrent saves. Administrators should
+periodically audit unreferenced objects and remove them through the Storage API,
+after allowing for in-flight uploads; account deletion also requires Storage
+object cleanup. Do not delete objects directly from the Storage database tables.
+
 | Table | Purpose |
 | --- | --- |
 | `exercises` | User-owned exercise definitions, including archived definitions needed by history |
@@ -193,8 +211,8 @@ Do not re-run it in the SQL editor on the existing project.
 
 Local CLI configuration is checked in at `supabase/config.toml`. It does not change
 hosted Auth settings. Only use `db reset` against a disposable **local** database.
-Both checked-in migration versions match Supabase's migration history. The
-original deployed migration is unchanged; hardening is a separate migration.
+The workout, hardening, and exercise image migrations have been deployed to the
+hosted project. New projects must apply all three migrations.
 
 After reviewing and testing future migrations, authenticate the CLI and link the
 intended remote project before pushing:

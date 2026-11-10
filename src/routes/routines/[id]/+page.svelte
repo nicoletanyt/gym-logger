@@ -1,5 +1,6 @@
 <script lang="ts">
-    import { Check, Pencil, Trash2 } from "@lucide/svelte";
+    import { Check, Pencil, PencilLine, Trash2 } from "@lucide/svelte";
+    import FieldIcon from "$lib/components/FieldIcon.svelte";
     import { page } from "$app/state";
     import Button from "$lib/components/ui/button/button.svelte";
     import ExerciseManager from "$lib/components/ExerciseManager.svelte";
@@ -48,9 +49,14 @@
 
 {#if routine}
 <header>
-    <div class="flex justify-between">
+    <div class="flex items-center gap-4">
         <BackBtn dest={"/routines"} />
-        <div class="space-x-3">
+        {#if isEdit}
+            <FieldIcon icon={PencilLine} class="min-w-0 flex-1"><Input bind:value={routine.name} aria-label="Routine name" class="min-w-0 text-2xl sm:text-3xl py-5 pl-10 pr-2 font-bold" /></FieldIcon>
+        {:else}
+            <h1 class="min-w-0 flex-1 break-words text-2xl sm:text-3xl">{routine.name}</h1>
+        {/if}
+        <div class="flex shrink-0 gap-3">
             <ConfirmDialog onconfirm={deleteRoutine}>
                 {#snippet trigger()}
                     <Trash2 />
@@ -68,18 +74,13 @@
             </Button>
         </div>
     </div>
-    {#if isEdit}
-        <Input bind:value={routine.name} class="text-3xl py-5 px-2 font-bold" />
-    {:else}
-        <h1>{routine.name}</h1>
-    {/if}
 </header>
 
 <section>
     <ExerciseManager bind:exercises={routine.exercises} readonly={!isEdit} />
 </section>
 {:else}
-    <BackBtn dest="/routines" /><h1>Routine not found</h1><p>This routine may have been deleted or belongs to another account.</p>
+    <header class="flex items-center gap-4 space-y-0"><BackBtn dest="/routines" /><h1 class="min-w-0 text-2xl sm:text-3xl">Routine not found</h1></header><p>This routine may have been deleted or belongs to another account.</p>
 {/if}
 
 <!-- TODO: -->

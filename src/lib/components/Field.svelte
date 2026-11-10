@@ -2,12 +2,12 @@
     import { cn } from "$lib/utils";
     import Label from "./ui/label/label.svelte";
 
-    let { label, children, controlClass = "" } = $props();
+    let { label, id = undefined, children, controlClass = "" } = $props();
 </script>
 
-<div class="flex justify-between">
-    <Label class="shrink-0">{label}</Label>
-    <div class={cn("w-1/2", controlClass)}>
+<div class="grid min-w-0 gap-2">
+    <Label for={id} class="text-sm font-medium">{label}</Label>
+    <div class={cn("min-w-0 w-full", controlClass)}>
         {@render children()}
     </div>
 </div>

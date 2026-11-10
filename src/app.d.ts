@@ -10,7 +10,9 @@ declare global {
 			user: User | null;
 		}
 		// interface PageData {}
-		// interface PageState {}
+		interface PageState {
+			createExercise?: { name: string; token: string };
+		}
 		// interface Platform {}
 	}
 }

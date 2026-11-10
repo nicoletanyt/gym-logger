@@ -5,7 +5,6 @@
     let { dest = "/" } = $props();
 </script>
 
-<Button variant="outline" href={dest}>
+<Button variant="outline" href={dest} size="icon" aria-label="Back">
     <ChevronLeft />
-    Back
 </Button>

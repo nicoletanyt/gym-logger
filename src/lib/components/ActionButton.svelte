@@ -20,7 +20,7 @@
         className,
     )}
 >
-    <Button variant="secondary" class="bg-green-300" {onclick} disabled={cloud.saving || cloud.needsReload || cloud.loading}>
+    <Button variant="secondary" class="bg-green-300 text-zinc-950 hover:bg-green-400" {onclick} disabled={cloud.saving || cloud.needsReload || cloud.loading}>
         {#if icon}
             {@render icon()}
         {:else}

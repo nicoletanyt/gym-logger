@@ -1,6 +1,6 @@
 <script lang="ts">
     import favicon from "$lib/assets/favicon.svg";
-    import { onMount, untrack } from "svelte";
+    import { onMount, tick, untrack } from "svelte";
     import { browser } from "$app/environment";
     import { page } from "$app/state";
     import { goto, invalidate } from "$app/navigation";
@@ -10,9 +10,25 @@
     import { cloud } from "$lib/cloud.svelte";
     import { getSupabase } from "$lib/supabase";
     import type { LayoutProps } from "./$types";
+    import CreateExercisePage from "$lib/components/CreateExercisePage.svelte";
+    import { initializeTheme } from "$lib/theme";
 
     let { children, data }: LayoutProps = $props();
     const authPage = $derived(page.url.pathname === "/sign-in" || page.url.pathname === "/reset-password" || page.url.pathname.startsWith("/auth/"));
+    let main = $state<HTMLElement>();
+    let wasCreatingExercise = false;
+    let previousScroll = 0;
+    onMount(initializeTheme);
+
+    $effect(() => {
+        const creating = Boolean(page.state.createExercise && page.route.id !== "/exercises/new");
+        if (!main || creating === wasCreatingExercise) return;
+        if (creating) previousScroll = main.scrollTop;
+        wasCreatingExercise = creating;
+        void tick().then(() => {
+            if (main && wasCreatingExercise === creating) main.scrollTop = creating ? 0 : previousScroll;
+        });
+    });
 
     function syncVerifiedUser(id: string | null) {
         if (id !== cloud.ownerId) sessionManager.resetActiveSession();
@@ -81,7 +97,7 @@
     {@render children()}
 {:else}
 <div class="box-border flex flex-col h-dvh w-full p-6 sm:p-10 pb-22">
-    <main class="box-border min-h-0 min-w-0 flex-1 relative overflow-auto p-1">
+    <main bind:this={main} class="box-border min-h-0 min-w-0 flex-1 relative overflow-auto p-1">
         {#if cloud.error}
             <div role="alert" class="mb-4 rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm space-y-2">
                 <p>{cloud.error}</p>
@@ -104,7 +120,12 @@
             {#if cloud.saving}<p role="status" class="mb-3 text-sm text-muted-foreground">Saving to Supabase…</p>{/if}
             {#key cloud.ownerId}
                 <fieldset class="contents" disabled={cloud.saving || cloud.needsReload || cloud.loading}>
-                    {@render children()}
+                    <div class="h-full" hidden={Boolean(page.state.createExercise && page.route.id !== "/exercises/new")}>
+                        {@render children()}
+                    </div>
+                    {#if page.state.createExercise && page.route.id !== "/exercises/new"}
+                        <CreateExercisePage name={page.state.createExercise.name} token={page.state.createExercise.token} />
+                    {/if}
                 </fieldset>
             {/key}
         {/if}

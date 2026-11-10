@@ -5,10 +5,14 @@
     import MetricTypeTag from "$lib/components/MetricTypeTag.svelte";
     import CardStat from "$lib/components/CardStat.svelte";
     import ConfirmDialog from "$lib/components/ConfirmDialog.svelte";
+    import ExerciseImage from "$lib/components/ExerciseImage.svelte";
+    import ExerciseImagePicker from "$lib/components/ExerciseImagePicker.svelte";
+    import { cloud } from "$lib/cloud.svelte";
     import AreaChart from "$lib/components/charts/AreaChart.svelte";
     import Button from "$lib/components/ui/button/button.svelte";
     import Input from "$lib/components/ui/input/input.svelte";
-    import { Check, Pencil, Trash2 } from "@lucide/svelte";
+    import { Check, Pencil, PencilLine, Trash2 } from "@lucide/svelte";
+    import FieldIcon from "$lib/components/FieldIcon.svelte";
     import { formatDuration } from "$lib/constants";
     import {
         exerciseManager,
@@ -25,15 +29,19 @@
 
     let isEdit = $state(false);
     let draftName = $state("");
+    let draftImage = $state("");
+    let imageFile = $state<File | null>(null);
     let editRevision = $state<number | undefined>();
 
     async function toggleEdit() {
         if (!exercise) return;
         if (isEdit) {
-            const result = await exerciseManager.updateExercise({ ...exercise, name: draftName, revision: editRevision });
+            const result = await exerciseManager.updateExercise({ ...exercise, name: draftName, imageLink: draftImage, revision: editRevision }, imageFile);
             if (!result.success) { alert(result.message); return; }
         } else {
             draftName = exercise.name;
+            draftImage = exercise.imageLink ?? "";
+            imageFile = null;
             editRevision = exercise.revision;
         }
         isEdit = !isEdit;
@@ -189,9 +197,14 @@
 
 {#if exercise}
 <header>
-    <div class="flex justify-between">
+    <div class="flex items-center gap-4">
         <BackBtn dest="/exercises" />
-        <div class="space-x-3">
+        {#if isEdit}
+            <FieldIcon icon={PencilLine} class="min-w-0 flex-1"><Input bind:value={draftName} aria-label="Exercise name" class="min-w-0 text-2xl sm:text-3xl py-5 pl-10 pr-2 font-bold" /></FieldIcon>
+        {:else}
+            <h1 class="min-w-0 flex-1 break-words text-2xl sm:text-3xl">{exercise.name}</h1>
+        {/if}
+        <div class="flex shrink-0 gap-3">
             <ConfirmDialog
                 title="Delete Exercise?"
                 description={`This will remove "${exercise.name}" from your exercises and routines. Your workout history will be kept.`}
@@ -204,6 +217,7 @@
             </ConfirmDialog>
             <Button
                 variant={"outline"}
+                disabled={cloud.saving || cloud.loading || cloud.needsReload}
                 onclick={() => {
                     toggleEdit();
                 }}
@@ -216,12 +230,12 @@
             </Button>
         </div>
     </div>
-    {#if isEdit}
-        <Input bind:value={draftName} class="text-3xl py-5 px-2 font-bold" />
-    {:else}
-        <h1>{exercise.name}</h1>
-    {/if}
     <MetricTypeTag metric={METRICS[exercise.metricType]} />
+    {#if isEdit}
+        <ExerciseImagePicker bind:imageLink={draftImage} bind:file={imageFile} />
+    {:else}
+        <ExerciseImage src={exercise.imageLink} alt={`${exercise.name} image`} class="mt-4 h-48 w-full rounded-lg" />
+    {/if}
 </header>
 
 {#if sessionEntries.length == 0}
@@ -324,5 +338,5 @@
     </section>
 {/if}
 {:else}
-    <BackBtn dest="/exercises" /><h1>Exercise not found</h1><p>This exercise is unavailable in your account.</p>
+    <header class="flex items-center gap-4 space-y-0"><BackBtn dest="/exercises" /><h1 class="min-w-0 text-2xl sm:text-3xl">Exercise not found</h1></header><p>This exercise is unavailable in your account.</p>
 {/if}

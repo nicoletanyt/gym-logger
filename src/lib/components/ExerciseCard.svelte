@@ -6,6 +6,7 @@
     import { sessionManager } from "$lib/Session.svelte";
     import MetricTypeTag from "./MetricTypeTag.svelte";
     import MetricDisplay from "./MetricDisplay.svelte";
+    import ExerciseImage from "./ExerciseImage.svelte";
 
     type Props = {
         exercise: Exercise;
@@ -42,7 +43,8 @@
         }}
     >
         <Card.Content class="flex justify-between items-center">
-            <div class="space-y-2">
+            <ExerciseImage src={exercise.imageLink} alt="" class="size-14 shrink-0 rounded-md mr-3" />
+            <div class="space-y-2 flex-1">
                 <p class="font-bold">{exercise.name}</p>
                 <div class="flex gap-2 items-center">
                     <MetricDisplay metric={latestMetric} />

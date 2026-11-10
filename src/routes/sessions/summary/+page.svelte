@@ -99,7 +99,7 @@
 <section>
     <Button
         variant="secondary"
-        class="bg-green-300"
+        class="bg-green-300 text-zinc-950 hover:bg-green-400"
         onclick={async () => {
             const result = await sessionManager.addActiveSession();
 

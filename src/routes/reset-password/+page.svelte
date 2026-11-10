@@ -5,6 +5,8 @@
     import Label from "$lib/components/ui/label/label.svelte";
     import { getSupabase } from "$lib/supabase";
     import { onMount } from "svelte";
+    import { LockKeyhole } from "@lucide/svelte";
+    import FieldIcon from "$lib/components/FieldIcon.svelte";
     let password = $state("");
     let confirmation = $state("");
     let busy = $state(false);
@@ -30,8 +32,8 @@
         <h1 class="text-3xl font-semibold">Choose a new password</h1>
         {#if error}<p role="alert" class="text-destructive">{error}</p>{/if}
         <form onsubmit={submit} class="space-y-5">
-            <div class="space-y-2"><Label for="new-password">New password</Label><Input id="new-password" type="password" required minlength={8} autocomplete="new-password" bind:value={password} /></div>
-            <div class="space-y-2"><Label for="confirmation">Confirm password</Label><Input id="confirmation" type="password" required minlength={8} autocomplete="new-password" bind:value={confirmation} /></div>
+            <div class="space-y-2"><Label for="new-password">New password</Label><FieldIcon icon={LockKeyhole}><Input id="new-password" type="password" required minlength={8} autocomplete="new-password" class="pl-10" bind:value={password} /></FieldIcon></div>
+            <div class="space-y-2"><Label for="confirmation">Confirm password</Label><FieldIcon icon={LockKeyhole}><Input id="confirmation" type="password" required minlength={8} autocomplete="new-password" class="pl-10" bind:value={confirmation} /></FieldIcon></div>
             <Button type="submit" disabled={busy || !ready} class="w-full">{busy ? "Saving…" : "Save password"}</Button>
         </form>
         <a href="/" class="text-sm underline">Back to Gym Logger</a>

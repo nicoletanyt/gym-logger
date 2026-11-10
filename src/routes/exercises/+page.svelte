@@ -1,26 +1,15 @@
 <script lang="ts">
     import ExerciseCard from "$lib/components/ExerciseCard.svelte";
-    import {
-        exerciseManager,
-        METRICS,
-        type Exercise,
-    } from "$lib/Exercise.svelte";
-    import * as Sheet from "$lib/components/ui/sheet/index.js";
-    import Input from "$lib/components/ui/input/input.svelte";
-    import Combobox from "$lib/components/ui/combobox/combobox.svelte";
-    import ActionButton from "$lib/components/ActionButton.svelte";
-    import Field from "$lib/components/Field.svelte";
+    import { exerciseManager } from "$lib/Exercise.svelte";
+    import { goto } from "$app/navigation";
     import AddBtn from "$lib/components/AddBtn.svelte";
     import Button, {
         buttonVariants,
     } from "$lib/components/ui/button/button.svelte";
     import ConfirmDialog from "$lib/components/ConfirmDialog.svelte";
-    import { cloud } from "$lib/cloud.svelte";
     import { cn } from "$lib/utils";
-    import { Check, Trash, X, Pencil } from "@lucide/svelte";
+    import { Check, Trash, Pencil } from "@lucide/svelte";
 
-    let newExercise = $state<Exercise>(exerciseManager.createDefaultExercise());
-    let showAdd = $state(false);
     let isEditing = $state(false);
     let selectedIds = $state<string[]>([]);
 
@@ -86,9 +75,7 @@
 
 {#if !isEditing}
     <AddBtn
-        onclick={() => {
-            showAdd = true;
-        }}
+        onclick={() => goto("/exercises/new")}
     />
 {:else}
     <div
@@ -124,55 +111,3 @@
         {/if}
     </div>
 {/if}
-
-<Sheet.Root bind:open={showAdd}>
-    <!-- Add Buttton -->
-    <Sheet.Content side="bottom" class="min-h-150 p-4" showCloseButton={false} inert={cloud.saving || cloud.needsReload || cloud.loading}>
-        <Sheet.Header class="flex justify-between">
-            <Sheet.Title>Create New Exercise</Sheet.Title>
-            <Button
-                variant={"ghost"}
-                size="icon-sm"
-                onclick={() => (showAdd = false)}
-            >
-                <X />
-            </Button>
-        </Sheet.Header>
-        <section class="px-4 my-0">
-            <Field label="Name">
-                <Input bind:value={newExercise.name} />
-            </Field>
-            <Field label="Exercise Type">
-                <Combobox
-                    noun="type"
-                    options={Object.values(METRICS).map((m) => {
-                        return {
-                            value: m.name.toLowerCase(),
-                            label: m.name,
-                        };
-                    })}
-                    bind:value={newExercise.metricType}
-                />
-            </Field>
-
-            <Field label="Image Link">
-                <Input bind:value={newExercise.imageLink} />
-            </Field>
-            <Field label="Note">
-                <Input bind:value={newExercise.note} />
-            </Field>
-        </section>
-
-        <ActionButton
-            text="Add Exercise"
-            onOverlay={true}
-            onclick={async () => {
-                const result = await exerciseManager.addExercise(newExercise);
-                if (result.success) {
-                    showAdd = false;
-                    newExercise = exerciseManager.createDefaultExercise();
-                } else alert(result.message);
-            }}
-        />
-    </Sheet.Content>
-</Sheet.Root>
