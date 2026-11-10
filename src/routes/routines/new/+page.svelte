@@ -6,8 +6,9 @@
     import { routineManager, type Routine } from "$lib/Routine.svelte";
     import Button from "$lib/components/ui/button/button.svelte";
     import { cloud } from "$lib/cloud.svelte";
-    import { Plus } from "@lucide/svelte";
+    import { PencilLine, Plus } from "@lucide/svelte";
     import ErrorAlert from "$lib/components/ErrorAlert.svelte";
+    import FieldIcon from "$lib/components/FieldIcon.svelte";
 
     let newRoutine = $state<Routine>(routineManager.createDefault());
     let error = $state("");
@@ -30,7 +31,7 @@
 <form class="flex flex-1 flex-col gap-8" onsubmit={save}>
     <label class="grid gap-2 text-sm font-medium">
         Name
-        <Input bind:value={newRoutine.name} />
+        <FieldIcon icon={PencilLine}><Input bind:value={newRoutine.name} class="pl-10" /></FieldIcon>
     </label>
 
     <section class="my-0 space-y-4">

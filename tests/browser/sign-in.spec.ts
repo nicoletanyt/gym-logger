@@ -52,6 +52,12 @@ test("sign-in fits a mobile viewport", async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto("/sign-in");
     await expect(page.getByRole("heading", { name: "Welcome back." })).toBeVisible();
+    for (const name of ["Email address", "Password"]) {
+        await expect(page.getByLabel(name, { exact: true }).locator("..").locator('svg[aria-hidden="true"]').first()).toBeVisible();
+    }
+    await page.getByLabel("Password", { exact: true }).fill("example-password");
+    await page.getByRole("button", { name: "Show password" }).click();
+    await expect(page.getByLabel("Password", { exact: true })).toHaveAttribute("type", "text");
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 

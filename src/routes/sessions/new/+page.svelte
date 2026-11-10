@@ -17,6 +17,9 @@
     import { formatDuration } from "$lib/constants";
     import { exerciseManager } from "$lib/Exercise.svelte";
     import { untrack } from "svelte";
+    import Field from "$lib/components/Field.svelte";
+    import FieldIcon from "$lib/components/FieldIcon.svelte";
+    import { CalendarDays, ListChecks } from "@lucide/svelte";
 
     let isOngoing = $state(false);
     let activeExercises = $state<ActiveExercise[]>([]);
@@ -91,7 +94,7 @@
     <h1 class="min-w-0 text-2xl sm:text-3xl">New Session</h1>
 </header>
 
-<section class="space-y-3">
+<section class="gap-5 space-y-0">
     {#if isOngoing}
         <p>
             Date: <span class="font-bold">
@@ -99,23 +102,25 @@
             </span>
         </p>
     {:else}
-        <div class="flex justify-between">
-            <Label class="shrink-0">Date</Label>
-            <Input
+        <Field label="Date" id="session-date">
+            <FieldIcon icon={CalendarDays}><Input
+                id="session-date"
                 disabled={isOngoing}
                 type="date"
-                class="w-1/2"
+                class="pl-10"
                 bind:value={sessionManager.activeSession.date}
-            />
-        </div>
-        <div class="flex justify-between">
-            <Label class="shrink-0">Routine</Label>
-            <Combobox
+            /></FieldIcon>
+        </Field>
+        <Field label="Routine">
+            <FieldIcon icon={ListChecks}><Combobox
                 noun="routine"
+                ariaLabel="Routine"
+                triggerClass="pl-10"
+                class="w-[var(--bits-popover-anchor-width)]"
                 options={routineManager.options}
                 bind:value={sessionManager.activeSession.routineId}
-            />
-        </div>
+            /></FieldIcon>
+        </Field>
     {/if}
 </section>
 

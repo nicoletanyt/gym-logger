@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { Check, Pencil, Trash2 } from "@lucide/svelte";
+    import { Check, Pencil, Timer, Trash2 } from "@lucide/svelte";
     import { page } from "$app/state";
     import Button from "$lib/components/ui/button/button.svelte";
     import ExerciseManager from "$lib/components/ExerciseManager.svelte";
@@ -12,6 +12,8 @@
     import { untrack } from "svelte";
     import type { Session } from "$lib/Session.svelte";
     import { cloud } from "$lib/cloud.svelte";
+    import Field from "$lib/components/Field.svelte";
+    import FieldIcon from "$lib/components/FieldIcon.svelte";
 
     const id = $derived(page.params.id ?? "");
     let session = $state<Session | undefined>();
@@ -78,10 +80,9 @@
     <div class="space-y-3">
         {#if session.routineName}<p class="text-muted-foreground">{session.routineName}</p>{/if}
         {#if isEdit}
-            <p class="flex justify-between items-center gap-5">
-                <span class="shrink-0"> Duration (mins): </span>
-                <Input type="number" min="0" step="0.1" bind:value={durationMinutes} />
-            </p>
+            <Field label="Duration (mins)" id="edit-session-duration">
+                <FieldIcon icon={Timer}><Input id="edit-session-duration" type="number" min="0" step="0.1" class="pl-10" bind:value={durationMinutes} /></FieldIcon>
+            </Field>
         {:else}
             <p>Duration: {formatDuration(session.duration)}</p>
         {/if}

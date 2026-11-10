@@ -93,12 +93,16 @@ test("creation page headers stay aligned on mobile and desktop", async ({ page }
         await page.getByRole("button", { name: "Add", exact: true }).click();
         const heading = page.getByRole("heading", { name: "Create Exercise" });
         const back = page.getByRole("button", { name: "Back", exact: true });
+        await expect(page.getByRole("textbox", { name: "Name", exact: true }).locator("..").locator('svg[aria-hidden="true"]')).toBeVisible();
+        await expect(page.getByRole("combobox", { name: "Exercise Type" }).locator("..").locator('svg[aria-hidden="true"]').first()).toBeVisible();
+        await expect(page.getByRole("textbox", { name: "Note (optional)" }).locator("..").locator('svg[aria-hidden="true"]')).toBeVisible();
         const headingBox = await heading.boundingBox();
         const backBox = await back.boundingBox();
         expect(headingBox && backBox && Math.abs((headingBox.y + headingBox.height / 2) - (backBox.y + backBox.height / 2))).toBeLessThan(2);
         await back.click();
         await page.getByRole("link", { name: "Routines", exact: true }).click();
         await page.getByRole("button", { name: "Add", exact: true }).click();
+        await expect(page.getByRole("textbox", { name: "Name", exact: true }).locator("..").locator('svg[aria-hidden="true"]')).toBeVisible();
         const routineHeading = await page.getByRole("heading", { name: "Create Routine" }).boundingBox();
         const routineBack = await page.getByRole("link", { name: "Back", exact: true }).boundingBox();
         expect(routineHeading && routineBack && Math.abs((routineHeading.y + routineHeading.height / 2) - (routineBack.y + routineBack.height / 2))).toBeLessThan(2);
@@ -166,6 +170,118 @@ test("other page headers use the same compact back control", async ({ page }) =>
     await checkHeader("Profile");
     await page.getByRole("button", { name: "Import Data" }).click();
     await checkHeader("Import Data");
+});
+
+test("session fields use stacked, full-width labels and controls", async ({ page }) => {
+    await mockSignIn(page);
+    for (const width of [320, 1280]) {
+        await page.setViewportSize({ width, height: 800 });
+        await page.getByRole("link", { name: "Home", exact: true }).click();
+        await page.getByRole("link", { name: "Log Session" }).click();
+        await expect(page.getByRole("heading", { name: "Log Session" })).toBeVisible();
+        await expect(page.getByRole("button", { name: "Add Session" })).toBeInViewport();
+        for (const label of ["Duration (mins)", "Date"]) {
+            const input = page.getByLabel(label, { exact: true });
+            await expect(input.locator("..").locator('svg[aria-hidden="true"]')).toBeVisible();
+            const labelBox = await page.getByText(label, { exact: true }).boundingBox();
+            const inputBox = await input.boundingBox();
+            expect(inputBox!.y).toBeGreaterThanOrEqual(labelBox!.y + labelBox!.height);
+            expect(Math.abs(inputBox!.x - labelBox!.x)).toBeLessThan(2);
+        }
+        const dateBox = await page.getByLabel("Date", { exact: true }).boundingBox();
+        const routineBox = await page.getByRole("combobox", { name: "Routine" }).boundingBox();
+        await expect(page.getByRole("combobox", { name: "Routine" }).locator("..").locator('svg[aria-hidden="true"]').first()).toBeVisible();
+        expect(Math.abs(dateBox!.width - routineBox!.width)).toBeLessThan(2);
+        await page.getByRole("link", { name: "Back", exact: true }).click();
+        await page.getByRole("link", { name: "Start Session" }).click();
+        await expect(page.getByLabel("Date", { exact: true })).toBeVisible();
+        await expect(page.getByRole("combobox", { name: "Routine" })).toBeVisible();
+    }
+});
+
+test("log session shows the metric type after selection and images on added exercises", async ({ page }) => {
+    await mockSignIn(page);
+    await page.evaluate(async () => {
+        const modulePath = "/src/lib/cloud.svelte.ts";
+        const { cloud } = await import(modulePath);
+        cloud.data.exercises.push(
+            { id: "00000000-0000-4000-8000-000000000011", name: "Dumbbell press", metricType: "weight", imageLink: "/exercise-images/dumbbell.jpg" },
+            { id: "00000000-0000-4000-8000-000000000012", name: "Unpictured exercise", metricType: "weight", imageLink: "" },
+        );
+    });
+    await page.getByRole("link", { name: "Log Session" }).click();
+    await page.getByRole("button", { name: "Add exercise", exact: true }).click();
+    await page.getByRole("combobox", { name: "Exercise" }).click();
+    await expect(page.getByRole("option", { name: "Dumbbell press" }).locator("img")).toHaveCount(0);
+    await expect(page.getByRole("option", { name: "Unpictured exercise" }).locator("img")).toHaveCount(0);
+    await page.getByRole("option", { name: "Dumbbell press" }).click();
+    await expect(page.getByRole("dialog", { name: "Add Exercise" }).getByText("Weight", { exact: true })).toBeVisible();
+    await page.setViewportSize({ width: 390, height: 800 });
+    await page.getByLabel("Sets", { exact: true }).fill("3");
+    await page.getByLabel("Weight (kg)", { exact: true }).fill("20");
+    await page.getByLabel("Reps", { exact: true }).fill("10");
+    await page.getByRole("dialog", { name: "Add Exercise" }).getByRole("button", { name: "Add Exercise", exact: true }).click();
+    await expect(page.locator('main img[src="/exercise-images/dumbbell.jpg"]')).toBeVisible();
+});
+
+test("exercise entry adapts fields, validates, and preserves prior values", async ({ page }) => {
+    await mockSignIn(page);
+    await page.evaluate(async () => {
+        const modulePath = "/src/lib/cloud.svelte.ts";
+        const { cloud } = await import(modulePath);
+        cloud.data.exercises.push(
+            { id: "weight-id", name: "Bench press", metricType: "weight", imageLink: "" },
+            { id: "reps-id", name: "Push ups", metricType: "reps", imageLink: "" },
+            { id: "duration-id", name: "Plank", metricType: "duration", imageLink: "" },
+            { id: "cardio-id", name: "Running", metricType: "cardio", imageLink: "" },
+        );
+        cloud.data.sessions["previous"] = { id: "previous", date: "2026-01-01", duration: 1200, routineId: "custom", exercises: [
+            { id: "entry", exerciseId: "weight-id", metric: { type: "weight", sets: 3, reps: 8, weight: 25 } },
+        ] };
+    });
+    await page.getByRole("link", { name: "Routines", exact: true }).click();
+    await page.getByRole("button", { name: "Add", exact: true }).click();
+    await page.getByRole("button", { name: "Add exercise", exact: true }).click();
+    const sheet = page.getByRole("dialog", { name: "Add Exercise" });
+    await expect(sheet.getByLabel("Sets", { exact: true })).toHaveCount(0);
+    await sheet.getByRole("button", { name: "Add Exercise", exact: true }).click();
+    await expect(sheet.getByRole("alert")).toContainText("Choose an exercise first.");
+    await sheet.getByRole("button", { name: "Dismiss error notification" }).click();
+    async function choose(name: string) {
+        await sheet.getByRole("combobox", { name: "Exercise" }).click();
+        await page.getByRole("option", { name, exact: true }).click();
+    }
+    await choose("Push ups");
+    await expect(sheet.getByLabel("Sets", { exact: true })).toHaveValue("");
+    await expect(sheet.getByLabel("Reps", { exact: true })).toHaveValue("");
+    await expect(sheet.getByLabel("Weight (kg)")).toHaveCount(0);
+    await sheet.getByRole("button", { name: "Add Exercise", exact: true }).click();
+    await expect(sheet.getByRole("alert")).toContainText("whole number of sets");
+    await expect(sheet.getByLabel("Sets", { exact: true })).toHaveAttribute("aria-invalid", "true");
+    await sheet.getByRole("button", { name: "Dismiss error notification" }).click();
+    await choose("Plank");
+    await expect(sheet.getByLabel("Duration (mins)")).toBeVisible();
+    await expect(sheet.getByLabel("Distance (km)")).toHaveCount(0);
+    await choose("Running");
+    await expect(sheet.getByLabel("Duration (mins)")).toBeVisible();
+    await expect(sheet.getByLabel("Distance (km)")).toBeVisible();
+    await sheet.getByLabel("Distance (km)").pressSequentially("2.5");
+    await expect(sheet.getByLabel("Distance (km)")).toHaveValue("2.5");
+    await choose("Bench press");
+    await expect(sheet.getByText("Last session:", { exact: false })).toContainText("3 sets · 8 reps · 25 kg");
+    await expect(sheet.getByLabel("Sets", { exact: true })).toHaveValue("3");
+    await expect(sheet.getByLabel("Reps", { exact: true })).toHaveValue("8");
+    await expect(sheet.getByLabel("Weight (kg)")).toHaveValue("25");
+    await sheet.getByRole("button", { name: "Add Exercise", exact: true }).click();
+    await expect(page.getByRole("main").getByText("Bench press", { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Edit exercises" }).click();
+    await page.getByRole("checkbox").check();
+    await page.getByRole("button", { name: "Edit selected exercise" }).click();
+    const editSheet = page.getByRole("dialog", { name: "Edit Exercise" });
+    await expect(editSheet.getByLabel("Weight (kg)")).toHaveValue("25");
+    await editSheet.getByLabel("Weight (kg)").fill("30");
+    await editSheet.getByRole("button", { name: "Save Exercise" }).click();
+    await expect(page.getByRole("main").getByText("30 kg", { exact: true })).toBeVisible();
 });
 
 test("nested exercise creation is a page and returns to the unsaved routine", async ({ page }) => {

@@ -13,6 +13,8 @@
     import ExerciseManager from "$lib/components/ExerciseManager.svelte";
     import Field from "$lib/components/Field.svelte";
     import { untrack } from "svelte";
+    import { CalendarDays, ListChecks, Timer } from "@lucide/svelte";
+    import FieldIcon from "$lib/components/FieldIcon.svelte";
 
     let newSession = $state<Session>(createDefaultSession());
 
@@ -23,7 +25,7 @@
 </script>
 
 <div
-    class="log-session box-border flex h-full min-h-0 min-w-0 w-full flex-col gap-4"
+    class="log-session mx-auto box-border flex h-full min-h-0 min-w-0 w-full max-w-2xl flex-col gap-4"
 >
     <header class="flex items-center gap-4 space-y-0">
         <BackBtn />
@@ -33,26 +35,29 @@
     <form
         class="box-border min-h-0 min-w-0 flex-1 space-y-4 overflow-y-auto p-1"
     >
-        <section class="session-fields my-0 min-w-0 grid-cols-1 space-y-3">
-            <Field label="Duration (mins)" controlClass="min-w-0">
-                <Input type="number" bind:value={newSession.duration} />
+        <section class="session-fields my-0 min-w-0 grid-cols-1 gap-5 space-y-0">
+            <Field label="Duration (mins)" id="log-duration">
+                <FieldIcon icon={Timer}><Input id="log-duration" type="number" class="pl-10" bind:value={newSession.duration} /></FieldIcon>
             </Field>
-            <Field label="Date" controlClass="min-w-0">
-                <Input type="date" bind:value={newSession.date} />
+            <Field label="Date" id="log-date">
+                <FieldIcon icon={CalendarDays}><Input id="log-date" type="date" class="pl-10" bind:value={newSession.date} /></FieldIcon>
             </Field>
 
-            <Field label="Routine" controlClass="min-w-0">
-                <Combobox
+            <Field label="Routine">
+                <FieldIcon icon={ListChecks}><Combobox
                     noun="routine"
+                    ariaLabel="Routine"
+                    triggerClass="pl-10"
+                    class="w-[var(--bits-popover-anchor-width)]"
                     options={routineManager.options}
                     bind:value={newSession.routineId}
-                />
+                /></FieldIcon>
             </Field>
         </section>
 
         <section class="session-exercises min-w-0 grid-cols-1 space-y-3">
             <h2>Exercises</h2>
-            <ExerciseManager bind:exercises={newSession.exercises} />
+            <ExerciseManager bind:exercises={newSession.exercises} showImages />
         </section>
     </form>
 
@@ -72,17 +77,6 @@
 </div>
 
 <style>
-    .session-fields > :global(div) {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-        column-gap: 0.5rem;
-    }
-
-    .session-fields > :global(div > div) {
-        width: 100%;
-        min-width: 0;
-    }
-
     .session-exercises > :global(div) {
         min-width: 0;
         grid-template-columns: minmax(0, 1fr);

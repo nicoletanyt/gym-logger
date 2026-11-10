@@ -4,6 +4,8 @@
     import { Textarea } from "$lib/components/ui/textarea/index.js";
     import * as Dialog from "$lib/components/ui/dialog/index.js";
     import { importText, type ImportResult } from "$lib/importer";
+    import { FileText } from "@lucide/svelte";
+    import FieldIcon from "$lib/components/FieldIcon.svelte";
 
     let text = $state("");
     let result = $state<ImportResult | null>(null);
@@ -66,13 +68,16 @@
         </p>
     </header>
 
+    <FieldIcon icon={FileText} multiline class="mt-2 flex-1 min-h-0">
     <Textarea
-        class="mt-2 flex-1 min-h-0"
+        class="h-full min-h-0 pl-10"
         style="field-sizing: fixed"
         bind:value={text}
         disabled={busy}
+        aria-label="Session data"
         placeholder={"e.g.\n9/8 bicep curls machine 7kg x10, 3 sets\nduration: 43mins"}
     />
+    </FieldIcon>
     <Button variant="success" class="w-full mt-3" onclick={handleImport} disabled={busy}>
         {busy ? "Importing to Supabase…" : "Import"}
     </Button>

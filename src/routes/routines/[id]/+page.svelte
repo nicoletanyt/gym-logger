@@ -1,5 +1,6 @@
 <script lang="ts">
-    import { Check, Pencil, Trash2 } from "@lucide/svelte";
+    import { Check, Pencil, PencilLine, Trash2 } from "@lucide/svelte";
+    import FieldIcon from "$lib/components/FieldIcon.svelte";
     import { page } from "$app/state";
     import Button from "$lib/components/ui/button/button.svelte";
     import ExerciseManager from "$lib/components/ExerciseManager.svelte";
@@ -51,7 +52,7 @@
     <div class="flex items-center gap-4">
         <BackBtn dest={"/routines"} />
         {#if isEdit}
-            <Input bind:value={routine.name} class="min-w-0 flex-1 text-2xl sm:text-3xl py-5 px-2 font-bold" />
+            <FieldIcon icon={PencilLine} class="min-w-0 flex-1"><Input bind:value={routine.name} aria-label="Routine name" class="min-w-0 text-2xl sm:text-3xl py-5 pl-10 pr-2 font-bold" /></FieldIcon>
         {:else}
             <h1 class="min-w-0 flex-1 break-words text-2xl sm:text-3xl">{routine.name}</h1>
         {/if}

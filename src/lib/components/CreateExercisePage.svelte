@@ -1,10 +1,11 @@
 <script lang="ts">
     import { goto } from "$app/navigation";
-    import { ChevronLeft, Plus } from "@lucide/svelte";
+    import { ChevronLeft, Dumbbell, FileText, PencilLine, Plus } from "@lucide/svelte";
     import { exerciseManager, METRICS, type Exercise } from "$lib/Exercise.svelte";
     import { completeExerciseCreation } from "$lib/exercise-creation";
     import ExerciseImagePicker from "$lib/components/ExerciseImagePicker.svelte";
     import ErrorAlert from "$lib/components/ErrorAlert.svelte";
+    import FieldIcon from "$lib/components/FieldIcon.svelte";
     import Button from "$lib/components/ui/button/button.svelte";
     import Input from "$lib/components/ui/input/input.svelte";
     import Combobox from "$lib/components/ui/combobox/combobox.svelte";
@@ -52,15 +53,15 @@
         <div class="grid gap-5">
             <label class="grid gap-2 text-sm font-medium">
                 Name
-                <Input bind:value={exercise.name} placeholder="e.g. Bench press" />
+                <FieldIcon icon={PencilLine}><Input bind:value={exercise.name} placeholder="e.g. Bench press" class="pl-10" /></FieldIcon>
             </label>
             <div class="grid gap-2 text-sm font-medium">
                 <span>Exercise Type</span>
-                <Combobox noun="type" ariaLabel="Exercise Type" class="w-[var(--bits-popover-anchor-width)]" options={Object.values(METRICS).map((m) => ({ value: m.name.toLowerCase(), label: m.name }))} bind:value={exercise.metricType} />
+                <FieldIcon icon={Dumbbell}><Combobox noun="type" ariaLabel="Exercise Type" triggerClass="pl-10" class="w-[var(--bits-popover-anchor-width)]" options={Object.values(METRICS).map((m) => ({ value: m.name.toLowerCase(), label: m.name }))} bind:value={exercise.metricType} /></FieldIcon>
             </div>
             <label class="grid gap-2 text-sm font-medium">
                 <span>Note <span class="font-normal text-muted-foreground">(optional)</span></span>
-                <Input bind:value={exercise.note} />
+                <FieldIcon icon={FileText}><Input bind:value={exercise.note} class="pl-10" /></FieldIcon>
             </label>
         </div>
         <ExerciseImagePicker bind:imageLink={exercise.imageLink} bind:file={imageFile} />

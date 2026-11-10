@@ -11,7 +11,8 @@
     import AreaChart from "$lib/components/charts/AreaChart.svelte";
     import Button from "$lib/components/ui/button/button.svelte";
     import Input from "$lib/components/ui/input/input.svelte";
-    import { Check, Pencil, Trash2 } from "@lucide/svelte";
+    import { Check, Pencil, PencilLine, Trash2 } from "@lucide/svelte";
+    import FieldIcon from "$lib/components/FieldIcon.svelte";
     import { formatDuration } from "$lib/constants";
     import {
         exerciseManager,
@@ -199,7 +200,7 @@
     <div class="flex items-center gap-4">
         <BackBtn dest="/exercises" />
         {#if isEdit}
-            <Input bind:value={draftName} class="min-w-0 flex-1 text-2xl sm:text-3xl py-5 px-2 font-bold" />
+            <FieldIcon icon={PencilLine} class="min-w-0 flex-1"><Input bind:value={draftName} aria-label="Exercise name" class="min-w-0 text-2xl sm:text-3xl py-5 pl-10 pr-2 font-bold" /></FieldIcon>
         {:else}
             <h1 class="min-w-0 flex-1 break-words text-2xl sm:text-3xl">{exercise.name}</h1>
         {/if}
