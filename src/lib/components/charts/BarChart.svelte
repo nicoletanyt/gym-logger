@@ -27,9 +27,9 @@
         format = formatDuration,
     }: Props = $props();
 
-    const chartConfig = {
+    const chartConfig = $derived({
         [key]: { label, color: "var(--chart-2)" },
-    } satisfies Chart.ChartConfig;
+    } satisfies Chart.ChartConfig);
 </script>
 
 <Card.Root>

@@ -10,8 +10,11 @@
     import { formatDuration } from "$lib/constants";
     import { goto } from "$app/navigation";
 
-    const id = page.params.id ?? "";
-    const session = $state(sessionManager.sessions[id]);
+    const id = $derived(page.params.id ?? "");
+    const storedSession = $derived(
+        Object.entries(sessionManager.sessions).find(([key, value]) => key === id || value.id === id),
+    );
+    const session = $derived(storedSession?.[1]);
 
     let isEdit = $state(false);
 
@@ -20,11 +23,13 @@
     }
 
     function deleteSession() {
-        sessionManager.deleteSession(session.date);
+        if (!storedSession) return;
+        sessionManager.deleteSession(storedSession[0]);
         goto("/sessions");
     }
 </script>
 
+{#if session}
 <header>
     <div class="flex justify-between">
         <BackBtn dest={"/sessions"} />
@@ -70,4 +75,12 @@
 <section>
     <ExerciseManager bind:exercises={session.exercises} />
 </section>
-
+{:else if !sessionManager.loaded}
+    <p role="status">Loading session…</p>
+{:else}
+    <header>
+        <BackBtn dest="/sessions" />
+        <h1>Session not found</h1>
+        <p class="text-muted-foreground">This session is not available in this browser.</p>
+    </header>
+{/if}

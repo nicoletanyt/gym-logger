@@ -24,7 +24,8 @@
     let {
         exercises = $bindable(),
         routineId = $bindable(),
-    }: { exercises: ExerciseEntry[]; routineId?: string } = $props();
+        canEdit = true,
+    }: { exercises: ExerciseEntry[]; routineId?: string; canEdit?: boolean } = $props();
     let metric = $state<ExerciseMetric>(createMetric("weight"));
     let exerciseId = $state("");
 
@@ -128,7 +129,7 @@
     {#each exercises as e}
         {@const exercise = exerciseManager.getById(e.exerciseId)}
         <div class="flex gap-2 items-center">
-            {#if showEdit}
+            {#if canEdit && showEdit}
                 <Checkbox
                     class="shrink-0 size-5"
                     checked={selectedRows.includes(e.id)}
@@ -160,6 +161,7 @@
             </Card.Root>
         </div>
     {/each}
+    {#if canEdit}
     <div class="flex justify-between items-center mt-3">
         <div>
             {#if showEdit}
@@ -199,6 +201,7 @@
             </Button>
         </div>
     </div>
+    {/if}
 </div>
 
 <Sheet.Root bind:open={showAdd}>

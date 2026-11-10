@@ -9,6 +9,7 @@
     import { Calendar, Plus, Star, Timer } from "@lucide/svelte";
     import CardStat from "$lib/components/CardStat.svelte";
     import ExerciseManager from "$lib/components/ExerciseManager.svelte";
+    import { exerciseManager } from "$lib/Exercise.svelte";
 
     const gifSource =
         GIFS["happy"][Math.floor(Math.random() * GIFS["happy"].length)];
@@ -23,8 +24,8 @@
 
     const chartData = $derived([
         ...sessionManager.activeSession.exercises.map((e) => ({
-            exercise: e.name,
-            avg: e.avgDuration,
+            exercise: exerciseManager.getById(e.exerciseId)?.name ?? "Unknown exercise",
+            avg: e.avgDuration ?? 0,
         })),
     ]);
 </script>
@@ -93,8 +94,8 @@
                     }}
                 >
                     <Star
-                        fill={num <= sessionManager.activeSession.effort
-                            ? "primary"
+                        fill={num <= (sessionManager.activeSession.effort ?? 0)
+                            ? "currentColor"
                             : "none"}
                     />
                 </Button>

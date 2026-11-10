@@ -9,11 +9,11 @@
 </header>
 
 <div class="grid gap-6">
-    {#each Object.values(sessionManager.sessions) as session}
+    {#each Object.entries(sessionManager.sessions) as [storageKey, session]}
         <SessionCard
             {session}
             onclick={() => {
-                goto(`/sessions/${session.date}`);
+                goto(`/sessions/${encodeURIComponent(storageKey)}`);
             }}
         />
     {:else}

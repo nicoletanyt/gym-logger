@@ -16,6 +16,8 @@
     import Combobox from "$lib/components/ui/combobox/combobox.svelte";
     import { routineManager } from "$lib/Routine.svelte";
     import { formatDuration } from "$lib/constants";
+    import { exerciseManager } from "$lib/Exercise.svelte";
+    import MetricDisplay from "$lib/components/MetricDisplay.svelte";
 
     // let sessionManager.activeSession = $state<Session>(DEFAULT_SESSION);
     let isOngoing = $state(false);
@@ -25,7 +27,7 @@
 
     let isAllDone = $derived(
         activeExercises.every(
-            (item: ActiveExercise) => item.currentSet == item.exercise.sets,
+            (item: ActiveExercise) => item.currentSet == item.exercise.metric.sets,
         ),
     );
 
@@ -62,11 +64,11 @@
             i < sessionManager.activeSession.exercises.length;
             i++
         ) {
-            sessionManager.activeSession.exercises[i].avgDuration =
+            sessionManager.activeSession.exercises[i].avgDuration = activeExercises[i].durations.length ?
                 activeExercises[i].durations.reduce(
                     (sum, current) => sum + current,
                     0,
-                ) / activeExercises[i].durations.length;
+                ) / activeExercises[i].durations.length : 0;
         }
 
         goto("/sessions/summary");
@@ -129,11 +131,12 @@
 {:else}
     <section class="space-y-8">
         {#each activeExercises as item}
-            {@const id = `${item.exercise.name}|${item.currentSet}`}
+            {@const exerciseName = exerciseManager.getById(item.exercise.exerciseId)?.name ?? "Unknown exercise"}
             <div class="space-y-3">
-                <div class="font-bold">{item.exercise.name}</div>
+                <div class="font-bold">{exerciseName}</div>
                 <div class="space-y-2">
-                    {#each Array.from( { length: Math.min(item.currentSet + 1, item.exercise.sets ?? 0) }, ) as _, i}
+                    {#each Array.from( { length: Math.min(item.currentSet + 1, item.exercise.metric.sets) }, ) as _, i}
+                        {@const id = `${item.exercise.id}-${i}`}
                         {@const checked = i < item.currentSet}
                         {@const worse = Math.max(...item.durations)}
                         {@const best = Math.min(...item.durations)}
@@ -159,8 +162,9 @@
                                 <Label
                                     for={id}
                                     class={`font-normal text-base ${checked ? "line-through" : ""}`}
-                                    >Set {i + 1} - x{item.exercise.reps}
+                                    >Set {i + 1}
                                 </Label>
+                                <MetricDisplay metric={item.exercise.metric} />
                             </div>
                             <!-- Time Label -->
                             {#if checked}

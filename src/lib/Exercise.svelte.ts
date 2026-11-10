@@ -75,6 +75,7 @@ export interface ExerciseEntry {
     id: string;
     exerciseId: string;
     metric: ExerciseMetric;
+    avgDuration?: number;
 }
 
 export const UNITS = {

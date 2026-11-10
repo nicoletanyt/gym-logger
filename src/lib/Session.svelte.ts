@@ -14,6 +14,7 @@ export interface Session {
     routineId: string;
     date: string;
     startTime?: Date;
+    effort?: number;
 }
 
 export const DEFAULT_SESSION: Session = {
@@ -26,12 +27,14 @@ export const DEFAULT_SESSION: Session = {
 
 class SessionManager {
     sessions = $state<Record<string, Session>>({}); // date: session
+    loaded = $state(false);
     activeSession = $state<Session>(DEFAULT_SESSION);
 
     loadData() {
         this.sessions = JSON.parse(
             localStorage.getItem(STORAGE_KEYS.sessions) ?? "{}",
         );
+        this.loaded = true;
     }
     updateData() {
         localStorage.setItem(
