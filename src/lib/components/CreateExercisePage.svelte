@@ -4,6 +4,7 @@
     import { exerciseManager, METRICS, type Exercise } from "$lib/Exercise.svelte";
     import { completeExerciseCreation } from "$lib/exercise-creation";
     import ExerciseImagePicker from "$lib/components/ExerciseImagePicker.svelte";
+    import ErrorAlert from "$lib/components/ErrorAlert.svelte";
     import Button from "$lib/components/ui/button/button.svelte";
     import Input from "$lib/components/ui/input/input.svelte";
     import Combobox from "$lib/components/ui/combobox/combobox.svelte";
@@ -63,7 +64,7 @@
             </label>
         </div>
         <ExerciseImagePicker bind:imageLink={exercise.imageLink} bind:file={imageFile} />
-        {#if error}<p role="alert" class="text-sm text-destructive">{error}</p>{/if}
+        {#if error}<ErrorAlert message={error} ondismiss={() => (error = "")} />{/if}
         <div class="sticky bottom-0 z-10 mt-auto bg-background pt-4 pb-2">
             <Button type="submit" variant="secondary" class="h-auto w-full bg-green-300 px-6 py-4 text-zinc-950 hover:bg-green-400" disabled={cloud.saving || cloud.needsReload || cloud.loading}><Plus /> Add Exercise</Button>
         </div>

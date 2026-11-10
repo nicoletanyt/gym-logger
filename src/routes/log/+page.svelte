@@ -25,9 +25,9 @@
 <div
     class="log-session box-border flex h-full min-h-0 min-w-0 w-full flex-col gap-4"
 >
-    <header>
+    <header class="flex items-center gap-4 space-y-0">
         <BackBtn />
-        <h1>Log Session</h1>
+        <h1 class="min-w-0 text-2xl sm:text-3xl">Log Session</h1>
     </header>
 
     <form

@@ -122,6 +122,52 @@ test("creation actions remain at the bottom of the scrollable page", async ({ pa
     }
 });
 
+test("creation validation errors use destructive alerts", async ({ page }) => {
+    await mockSignIn(page);
+    await page.clock.install();
+    await page.getByRole("link", { name: "Exercises", exact: true }).click();
+    await page.getByRole("button", { name: "Add", exact: true }).click();
+    await page.getByRole("button", { name: "Add Exercise", exact: true }).click();
+    await expect(page.locator('[data-slot="alert"][role="alert"]')).toContainText("Enter an exercise name.");
+    const notification = await page.getByRole("button", { name: "Dismiss error notification" }).boundingBox();
+    expect(notification!.y).toBeLessThanOrEqual(20);
+    expect(page.viewportSize()!.width - notification!.x - notification!.width).toBeLessThanOrEqual(20);
+    await page.getByRole("button", { name: "Dismiss error notification" }).click();
+    await expect(page.locator('[data-slot="alert"][role="alert"]')).toHaveCount(0);
+    await page.getByRole("button", { name: "Add Exercise", exact: true }).click();
+    await expect(page.locator('[data-slot="alert"][role="alert"]')).toBeVisible();
+    await page.clock.fastForward(5_000);
+    await expect(page.locator('[data-slot="alert"][role="alert"]')).toHaveCount(0);
+    await page.getByRole("button", { name: "Back", exact: true }).click();
+    await page.getByRole("link", { name: "Routines", exact: true }).click();
+    await page.getByRole("button", { name: "Add", exact: true }).click();
+    await page.getByRole("button", { name: "Add Routine", exact: true }).click();
+    await expect(page.locator('[data-slot="alert"][role="alert"]')).toContainText("need to add exercises");
+});
+
+test("other page headers use the same compact back control", async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 700 });
+    await mockSignIn(page);
+    async function checkHeader(title: string) {
+        const back = page.getByRole("link", { name: "Back", exact: true });
+        const heading = page.getByRole("heading", { name: title, exact: true });
+        const backBox = await back.boundingBox();
+        const headingBox = await heading.boundingBox();
+        expect(backBox!.width).toBeCloseTo(backBox!.height, 0);
+        expect(Math.abs((backBox!.y + backBox!.height / 2) - (headingBox!.y + headingBox!.height / 2))).toBeLessThan(2);
+    }
+    await page.getByRole("link", { name: "Log Session" }).click();
+    await checkHeader("Log Session");
+    await page.getByRole("link", { name: "Back", exact: true }).click();
+    await page.getByRole("link", { name: "Start Session" }).click();
+    await checkHeader("New Session");
+    await page.getByRole("link", { name: "Back", exact: true }).click();
+    await page.locator("header").first().getByRole("button").click();
+    await checkHeader("Profile");
+    await page.getByRole("button", { name: "Import Data" }).click();
+    await checkHeader("Import Data");
+});
+
 test("nested exercise creation is a page and returns to the unsaved routine", async ({ page }) => {
     await mockSignIn(page);
     await page.getByRole("link", { name: "Routines", exact: true }).click();

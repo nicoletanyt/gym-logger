@@ -54,9 +54,10 @@
 
 {#if session}
 <header>
-    <div class="flex justify-between">
+    <div class="flex items-center gap-4">
         <BackBtn dest={"/sessions"} />
-        <div class="space-x-3">
+        <h1 class="min-w-0 flex-1 break-words text-2xl sm:text-3xl">{session.date}</h1>
+        <div class="flex shrink-0 gap-3">
             <ConfirmDialog onconfirm={deleteSession}>
                 {#snippet trigger()}
                     <Trash2 />
@@ -75,7 +76,6 @@
         </div>
     </div>
     <div class="space-y-3">
-        <h1>{session.date}</h1>
         {#if session.routineName}<p class="text-muted-foreground">{session.routineName}</p>{/if}
         {#if isEdit}
             <p class="flex justify-between items-center gap-5">
@@ -92,5 +92,5 @@
     <ExerciseManager bind:exercises={session.exercises} readonly={!isEdit} />
 </section>
 {:else}
-    <BackBtn dest="/sessions" /><h1>Session not found</h1><p>This session may have been deleted or belongs to another account.</p>
+    <header class="flex items-center gap-4 space-y-0"><BackBtn dest="/sessions" /><h1 class="min-w-0 text-2xl sm:text-3xl">Session not found</h1></header><p>This session may have been deleted or belongs to another account.</p>
 {/if}

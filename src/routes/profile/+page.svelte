@@ -45,8 +45,10 @@
 </script>
 
 <header>
+    <div class="flex items-center gap-4">
     <BackBtn />
-    <h1>Profile</h1>
+    <h1 class="min-w-0 text-2xl sm:text-3xl">Profile</h1>
+    </div>
     <p class="text-muted-foreground">{page.data.user?.email}</p>
 </header>
 

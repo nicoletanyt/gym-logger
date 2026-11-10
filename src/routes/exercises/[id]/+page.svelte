@@ -196,9 +196,14 @@
 
 {#if exercise}
 <header>
-    <div class="flex justify-between">
+    <div class="flex items-center gap-4">
         <BackBtn dest="/exercises" />
-        <div class="space-x-3">
+        {#if isEdit}
+            <Input bind:value={draftName} class="min-w-0 flex-1 text-2xl sm:text-3xl py-5 px-2 font-bold" />
+        {:else}
+            <h1 class="min-w-0 flex-1 break-words text-2xl sm:text-3xl">{exercise.name}</h1>
+        {/if}
+        <div class="flex shrink-0 gap-3">
             <ConfirmDialog
                 title="Delete Exercise?"
                 description={`This will remove "${exercise.name}" from your exercises and routines. Your workout history will be kept.`}
@@ -224,11 +229,6 @@
             </Button>
         </div>
     </div>
-    {#if isEdit}
-        <Input bind:value={draftName} class="text-3xl py-5 px-2 font-bold" />
-    {:else}
-        <h1>{exercise.name}</h1>
-    {/if}
     <MetricTypeTag metric={METRICS[exercise.metricType]} />
     {#if isEdit}
         <ExerciseImagePicker bind:imageLink={draftImage} bind:file={imageFile} />
@@ -337,5 +337,5 @@
     </section>
 {/if}
 {:else}
-    <BackBtn dest="/exercises" /><h1>Exercise not found</h1><p>This exercise is unavailable in your account.</p>
+    <header class="flex items-center gap-4 space-y-0"><BackBtn dest="/exercises" /><h1 class="min-w-0 text-2xl sm:text-3xl">Exercise not found</h1></header><p>This exercise is unavailable in your account.</p>
 {/if}

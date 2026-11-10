@@ -7,6 +7,7 @@
     import Button from "$lib/components/ui/button/button.svelte";
     import { cloud } from "$lib/cloud.svelte";
     import { Plus } from "@lucide/svelte";
+    import ErrorAlert from "$lib/components/ErrorAlert.svelte";
 
     let newRoutine = $state<Routine>(routineManager.createDefault());
     let error = $state("");
@@ -22,7 +23,7 @@
 
 <div class="mx-auto flex min-h-full w-full max-w-2xl flex-col">
 <header class="mt-4 mb-8 flex items-center gap-4 space-y-0">
-    <BackBtn dest={"/routines"} iconOnly />
+    <BackBtn dest={"/routines"} />
     <h1 class="min-w-0 text-2xl sm:text-3xl">Create Routine</h1>
 </header>
 
@@ -39,7 +40,7 @@
         {/if}
         <ExerciseManager bind:exercises={newRoutine.exercises} />
     </section>
-    {#if error}<p role="alert" class="text-sm text-destructive">{error}</p>{/if}
+    {#if error}<ErrorAlert message={error} ondismiss={() => (error = "")} />{/if}
     <div class="sticky bottom-0 z-10 mt-auto bg-background pt-4 pb-2">
         <Button type="submit" variant="secondary" class="h-auto w-full bg-green-300 px-6 py-4 text-zinc-950 hover:bg-green-400" disabled={cloud.saving || cloud.needsReload || cloud.loading}><Plus /> Add Routine</Button>
     </div>

@@ -2,10 +2,9 @@
     import { Button } from "$lib/components/ui/button/index.js";
     import { ChevronLeft } from "@lucide/svelte";
 
-    let { dest = "/", iconOnly = false } = $props();
+    let { dest = "/" } = $props();
 </script>
 
-<Button variant="outline" href={dest} size={iconOnly ? "icon" : "default"} aria-label={iconOnly ? "Back" : undefined}>
+<Button variant="outline" href={dest} size="icon" aria-label="Back">
     <ChevronLeft />
-    {#if !iconOnly}Back{/if}
 </Button>

@@ -84,11 +84,11 @@
     });
 </script>
 
-<header>
+<header class="flex items-center gap-4 space-y-0">
     {#if !isOngoing}
         <BackBtn />
     {/if}
-    <h1>New Session</h1>
+    <h1 class="min-w-0 text-2xl sm:text-3xl">New Session</h1>
 </header>
 
 <section class="space-y-3">

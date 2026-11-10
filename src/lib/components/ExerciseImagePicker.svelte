@@ -4,6 +4,7 @@
     import { Image as ImageIcon, Trash2, Upload } from '@lucide/svelte';
     import Button from './ui/button/button.svelte';
     import * as Dialog from './ui/dialog/index.js';
+    import ErrorAlert from './ErrorAlert.svelte';
 
     let { imageLink = $bindable(''), file = $bindable(null) }: { imageLink?: string; file?: File | null } = $props();
     const inputId = $props.id();
@@ -43,7 +44,7 @@
         </div>
     </div>
     <input bind:this={fileInput} id={inputId} aria-label="Upload a photo" type="file" accept="image/jpeg,image/png,image/webp" onchange={chooseFile} class="sr-only" />
-    {#if error}<p role="alert" class="text-sm text-destructive">{error}</p>{/if}
+    {#if error}<ErrorAlert message={error} ondismiss={() => (error = '')} />{/if}
 </fieldset>
 
 <Dialog.Root bind:open={libraryOpen}>

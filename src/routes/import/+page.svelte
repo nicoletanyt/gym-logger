@@ -49,8 +49,10 @@
 
 <div class="h-full flex flex-col">
     <header class="shrink-0">
+        <div class="flex items-center gap-4">
         <BackBtn dest={"/profile"} />
-        <h1>Import Data</h1>
+        <h1 class="min-w-0 text-2xl sm:text-3xl">Import Data</h1>
+        </div>
         <p class="text-muted-foreground">Paste your session data in.</p>
         <p class="text-muted-foreground text-sm">
             Format: start each session with a date (day/month), then list one
