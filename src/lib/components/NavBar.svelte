@@ -24,6 +24,7 @@
     <a
         class={`flex flex-col items-center gap-2 ${isActive(item.id) ? "text-foreground" : "text-muted-foreground"}`}
         href={item.id}
+        aria-current={isActive(item.id) ? "page" : undefined}
     >
         <item.icon class="size-5" />
         <p class="text-xs">{item.name}</p>

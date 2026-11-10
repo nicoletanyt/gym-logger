@@ -1,5 +1,6 @@
 <script lang="ts">
-    import { Check, Pencil, Trash2 } from "@lucide/svelte";
+    import { Check, Pencil, PencilLine, Trash2 } from "@lucide/svelte";
+    import FieldIcon from "$lib/components/FieldIcon.svelte";
     import { page } from "$app/state";
     import Button from "$lib/components/ui/button/button.svelte";
     import ExerciseManager from "$lib/components/ExerciseManager.svelte";
@@ -8,25 +9,54 @@
     import BackBtn from "$lib/components/BackBtn.svelte";
     import { routineManager } from "$lib/Routine.svelte";
     import Input from "$lib/components/ui/input/input.svelte";
+    import { untrack } from "svelte";
+    import type { Routine } from "$lib/Routine.svelte";
+    import { cloud } from "$lib/cloud.svelte";
 
-    const id = page.params.id ?? "";
-    const routine = $state($state.snapshot(routineManager.getById(id)!));
+    const id = $derived(page.params.id ?? "");
+    let routine = $state<Routine | undefined>();
     let isEdit = $state(false);
+    $effect(() => {
+        const routeId = id;
+        untrack(() => {
+            const original = routineManager.getById(routeId);
+            routine = original ? structuredClone($state.snapshot(original)) : undefined;
+            isEdit = false;
+        });
+    });
 
-    function deleteRoutine() {
-        routineManager.deleteRoutine(id);
-        goto("/routines");
+    async function deleteRoutine() {
+        if (!routine) return;
+        const result = await routineManager.deleteRoutine(id, routine.revision);
+        if (result.success) goto("/routines");
+        else alert(result.message);
     }
 
-    function updateRoutine() {
-        routineManager.updateRoutine(routine);
+    async function toggleEdit() {
+        if (!routine) return;
+        if (!isEdit) {
+            const latest = routineManager.getById(id);
+            routine = latest ? structuredClone($state.snapshot(latest)) : undefined;
+            isEdit = Boolean(routine); return;
+        }
+        const result = await routineManager.updateRoutine(routine);
+        if (result.success) {
+            if (!cloud.needsReload) routine = structuredClone($state.snapshot(routineManager.getById(id)));
+            isEdit = false;
+        } else alert(result.message);
     }
 </script>
 
+{#if routine}
 <header>
-    <div class="flex justify-between">
+    <div class="flex items-center gap-4">
         <BackBtn dest={"/routines"} />
-        <div class="space-x-3">
+        {#if isEdit}
+            <FieldIcon icon={PencilLine} class="min-w-0 flex-1"><Input bind:value={routine.name} aria-label="Routine name" class="min-w-0 text-2xl sm:text-3xl py-5 pl-10 pr-2 font-bold" /></FieldIcon>
+        {:else}
+            <h1 class="min-w-0 flex-1 break-words text-2xl sm:text-3xl">{routine.name}</h1>
+        {/if}
+        <div class="flex shrink-0 gap-3">
             <ConfirmDialog onconfirm={deleteRoutine}>
                 {#snippet trigger()}
                     <Trash2 />
@@ -34,10 +64,7 @@
             </ConfirmDialog>
             <Button
                 variant={"outline"}
-                onclick={() => {
-                    isEdit = !isEdit;
-                    if (!isEdit) updateRoutine();
-                }}
+                onclick={toggleEdit}
             >
                 {#if isEdit}
                     <Check />
@@ -47,16 +74,14 @@
             </Button>
         </div>
     </div>
-    {#if isEdit}
-        <Input bind:value={routine.name} class="text-3xl py-5 px-2 font-bold" />
-    {:else}
-        <h1>{routine.name}</h1>
-    {/if}
 </header>
 
 <section>
-    <ExerciseManager bind:exercises={routine.exercises} routineId={id} />
+    <ExerciseManager bind:exercises={routine.exercises} readonly={!isEdit} />
 </section>
+{:else}
+    <header class="flex items-center gap-4 space-y-0"><BackBtn dest="/routines" /><h1 class="min-w-0 text-2xl sm:text-3xl">Routine not found</h1></header><p>This routine may have been deleted or belongs to another account.</p>
+{/if}
 
 <!-- TODO: -->
 <!-- <section> -->

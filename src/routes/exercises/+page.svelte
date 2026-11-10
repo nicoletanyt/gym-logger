@@ -1,27 +1,15 @@
 <script lang="ts">
     import ExerciseCard from "$lib/components/ExerciseCard.svelte";
-    import {
-        exerciseManager,
-        METRICS,
-        type Exercise,
-    } from "$lib/Exercise.svelte";
-    import * as Sheet from "$lib/components/ui/sheet/index.js";
-    import Input from "$lib/components/ui/input/input.svelte";
-    import Combobox from "$lib/components/ui/combobox/combobox.svelte";
-    import ActionButton from "$lib/components/ActionButton.svelte";
-    import Field from "$lib/components/Field.svelte";
+    import { exerciseManager } from "$lib/Exercise.svelte";
+    import { goto } from "$app/navigation";
     import AddBtn from "$lib/components/AddBtn.svelte";
     import Button, {
         buttonVariants,
     } from "$lib/components/ui/button/button.svelte";
     import ConfirmDialog from "$lib/components/ConfirmDialog.svelte";
-    import { sessionManager } from "$lib/Session.svelte";
-    import { routineManager } from "$lib/Routine.svelte";
     import { cn } from "$lib/utils";
-    import { Check, Trash, X, Pencil } from "@lucide/svelte";
+    import { Check, Trash, Pencil } from "@lucide/svelte";
 
-    let newExercise = $state<Exercise>(exerciseManager.createDefaultExercise());
-    let showAdd = $state(false);
     let isEditing = $state(false);
     let selectedIds = $state<string[]>([]);
 
@@ -47,11 +35,10 @@
         selectedIds = [];
     }
 
-    function deleteSelected() {
-        exerciseManager.removeExercises(selectedIds);
-        sessionManager.removeExerciseEntries(selectedIds);
-        routineManager.removeExerciseEntries(selectedIds);
-        toggleEdit();
+    async function deleteSelected() {
+        const result = await exerciseManager.removeExercises(selectedIds);
+        if (result.success) toggleEdit();
+        else alert(result.message);
     }
 </script>
 
@@ -88,9 +75,7 @@
 
 {#if !isEditing}
     <AddBtn
-        onclick={() => {
-            showAdd = true;
-        }}
+        onclick={() => goto("/exercises/new")}
     />
 {:else}
     <div
@@ -102,7 +87,7 @@
         {#if selectedIds.length > 0}
             <ConfirmDialog
                 title="Delete Exercises?"
-                description={`This will permanently delete ${selectedIds.length} exercise${selectedIds.length == 1 ? "" : "s"} and all related data, including every entry of it in your sessions and routines.`}
+                description={`This will remove ${selectedIds.length} exercise${selectedIds.length == 1 ? "" : "s"} from your exercises and routines. Your workout history will be kept.`}
                 onconfirm={deleteSelected}
                 buttonVar="destructive"
             >
@@ -126,53 +111,3 @@
         {/if}
     </div>
 {/if}
-
-<Sheet.Root bind:open={showAdd}>
-    <!-- Add Buttton -->
-    <Sheet.Content side="bottom" class="min-h-150 p-4" showCloseButton={false}>
-        <Sheet.Header class="flex justify-between">
-            <Sheet.Title>Create New Exercise</Sheet.Title>
-            <Button
-                variant={"ghost"}
-                size="icon-sm"
-                onclick={() => (showAdd = false)}
-            >
-                <X />
-            </Button>
-        </Sheet.Header>
-        <section class="px-4 my-0">
-            <Field label="Name">
-                <Input bind:value={newExercise.name} />
-            </Field>
-            <Field label="Exercise Type">
-                <Combobox
-                    noun="type"
-                    options={Object.values(METRICS).map((m) => {
-                        return {
-                            value: m.name.toLowerCase(),
-                            label: m.name,
-                        };
-                    })}
-                    bind:value={newExercise.metricType}
-                />
-            </Field>
-
-            <Field label="Image Link">
-                <Input bind:value={newExercise.imageLink} />
-            </Field>
-            <Field label="Note">
-                <Input bind:value={newExercise.note} />
-            </Field>
-        </section>
-
-        <ActionButton
-            text="Add Exercise"
-            onOverlay={true}
-            onclick={() => {
-                exerciseManager.addExercise(newExercise);
-                exerciseManager.updateData();
-                showAdd = false;
-            }}
-        />
-    </Sheet.Content>
-</Sheet.Root>

@@ -2,6 +2,7 @@
     import * as AlertDialog from "$lib/components/ui/alert-dialog/index.js";
     import { buttonVariants } from "$lib/components/ui/button/index.js";
     import { cn } from "$lib/utils";
+    import { cloud } from "$lib/cloud.svelte";
 
     let {
         trigger,
@@ -15,6 +16,7 @@
 
 <AlertDialog.Root>
     <AlertDialog.Trigger
+        disabled={cloud.saving || cloud.needsReload || cloud.loading}
         class={cn(
             buttonVariants({
                 variant: buttonVar as
@@ -50,7 +52,7 @@
         </AlertDialog.Header>
         <AlertDialog.Footer>
             <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
-            <AlertDialog.Action onclick={onconfirm}>Continue</AlertDialog.Action
+            <AlertDialog.Action onclick={onconfirm} disabled={cloud.saving || cloud.needsReload || cloud.loading}>Continue</AlertDialog.Action
             >
         </AlertDialog.Footer>
     </AlertDialog.Content>

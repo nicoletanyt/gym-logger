@@ -6,25 +6,32 @@
     import * as Popover from "$lib/components/ui/popover/index.js";
     import { Button } from "$lib/components/ui/button/index.js";
     import { cn } from "$lib/utils.js";
+    import ExerciseImage from "$lib/components/ExerciseImage.svelte";
 
-    type Options = { value: string; label: string };
+    type Options = { value: string; label: string; imageLink?: string };
     let {
         ref = $bindable(null),
         options = $bindable<Options[]>(),
         noun,
+        ariaLabel,
+        invalid = false,
         onChange = () => {},
         onCreate,
         value = $bindable<string>(""),
         class: className = "",
+        triggerClass = "",
         ...restProps
     }: {
         ref?: HTMLButtonElement | null;
         options: Options[];
         noun: string;
+        ariaLabel?: string;
+        invalid?: boolean;
         onChange?: () => void;
         onCreate?: (name: string) => void;
         value?: string;
         class?: string;
+        triggerClass?: string;
         [key: string]: any;
     } = $props();
 
@@ -59,8 +66,10 @@
             <Button
                 {...props}
                 variant="outline"
-                class="w-full justify-between"
+                class={cn("w-full justify-between", triggerClass)}
                 role="combobox"
+                aria-label={ariaLabel}
+                aria-invalid={invalid || undefined}
                 aria-expanded={open}
             >
                 {selectedValue || `Select a ${noun} ...`}
@@ -86,6 +95,9 @@
                                 closeAndFocusTrigger();
                             }}
                         >
+                            {#if option.imageLink}
+                                <ExerciseImage src={option.imageLink} alt="" class="size-10 shrink-0 rounded-md" />
+                            {/if}
                             <CheckIcon
                                 class={cn(
                                     value !== option.value &&

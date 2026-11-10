@@ -1,15 +1,18 @@
 import { v4 as uuidv4 } from "uuid";
-import { STORAGE_KEYS, type Result } from "./constants";
+import { type Result } from "./constants";
 import type { ExerciseEntry } from "./Exercise.svelte";
+import { cloud } from "./cloud.svelte";
+import { saveRoutine } from "./workout-repository";
 
 export interface Routine {
     id: string;
     name: string;
     exercises: ExerciseEntry[];
+    revision?: number;
 }
 
 class RoutineManager {
-    routines = $state<Routine[]>([]);
+    get routines() { return cloud.data.routines; }
     options = $derived([
         { value: "custom", label: "Custom" },
         ...this.routines.map((r) => ({
@@ -18,17 +21,8 @@ class RoutineManager {
         })),
     ]);
 
-    loadData() {
-        this.routines = JSON.parse(
-            localStorage.getItem(STORAGE_KEYS.routines) ?? "[]",
-        );
-    }
-    updateData() {
-        localStorage.setItem(STORAGE_KEYS.routines, JSON.stringify(this.routines));
-    }
-
-    getById(id: string): Routine {
-        return this.routines.find((r) => r.id == id)!;
+    getById(id: string): Routine | undefined {
+        return this.routines.find((r) => r.id == id);
     }
 
     createDefault() {
@@ -42,30 +36,23 @@ class RoutineManager {
     // TODO:
     getTotalSessions() { }
 
-    addRoutine(newRoutine: Routine): Result {
+    async addRoutine(newRoutine: Routine): Promise<Result> {
         if (newRoutine.exercises.length == 0)
             return { success: false, message: "need to add exercises. no slacking." };
 
-        this.routines.push({ ...newRoutine });
-        this.updateData();
-        return { success: true };
+        const value = $state.snapshot(newRoutine);
+        return cloud.mutate((client) => saveRoutine(client, value, true));
     }
-    deleteRoutine(id: string) {
-        this.routines = this.routines.filter((r) => r.id != id);
-        this.updateData();
+    async deleteRoutine(id: string, revision: number | undefined): Promise<Result> {
+        if (!revision) return { success: false, message: "Reload this routine before deleting." };
+        return cloud.mutate(async (client) => {
+            const { error } = await client.rpc("delete_routine", { p_id: id, p_expected_revision: revision });
+            if (error) throw error;
+        });
     }
-    removeExerciseEntries(exerciseIds: string[]) {
-        for (const routine of this.routines) {
-            routine.exercises = routine.exercises.filter(
-                (e) => !exerciseIds.includes(e.exerciseId),
-            );
-        }
-        this.updateData();
-    }
-    updateRoutine(newRoutine: Routine) {
-        this.deleteRoutine(newRoutine.id);
-        this.addRoutine(newRoutine);
-        this.updateData();
+    async updateRoutine(newRoutine: Routine): Promise<Result> {
+        const value = $state.snapshot(newRoutine);
+        return cloud.mutate((client) => saveRoutine(client, value));
     }
 }
 

@@ -8,18 +8,17 @@
     import type { ActiveExercise } from "$lib/types";
     import ConfirmDialog from "$lib/components/ConfirmDialog.svelte";
     import { goto } from "$app/navigation";
-    import {
-        DEFAULT_SESSION,
-        sessionManager,
-        type Session,
-    } from "$lib/Session.svelte";
+    import { sessionManager } from "$lib/Session.svelte";
     import Combobox from "$lib/components/ui/combobox/combobox.svelte";
     import { routineManager } from "$lib/Routine.svelte";
     import { formatDuration } from "$lib/constants";
     import { exerciseManager } from "$lib/Exercise.svelte";
     import MetricDisplay from "$lib/components/MetricDisplay.svelte";
+    import { untrack } from "svelte";
+    import Field from "$lib/components/Field.svelte";
+    import FieldIcon from "$lib/components/FieldIcon.svelte";
+    import { CalendarDays, ListChecks } from "@lucide/svelte";
 
-    // let sessionManager.activeSession = $state<Session>(DEFAULT_SESSION);
     let isOngoing = $state(false);
     let activeExercises = $state<ActiveExercise[]>([]);
 
@@ -64,11 +63,13 @@
             i < sessionManager.activeSession.exercises.length;
             i++
         ) {
-            sessionManager.activeSession.exercises[i].avgDuration = activeExercises[i].durations.length ?
-                activeExercises[i].durations.reduce(
+            const durations = activeExercises[i].durations;
+            sessionManager.activeSession.exercises[i].avgDuration = durations.length
+                ? durations.reduce(
                     (sum, current) => sum + current,
                     0,
-                ) / activeExercises[i].durations.length : 0;
+                ) / durations.length
+                : 0;
         }
 
         goto("/sessions/summary");
@@ -81,18 +82,19 @@
     }
 
     $effect(() => {
-        sessionManager.applyRoutine(sessionManager.activeSession);
+        sessionManager.activeSession.routineId;
+        untrack(() => sessionManager.applyRoutine(sessionManager.activeSession));
     });
 </script>
 
-<header>
+<header class="flex items-center gap-4 space-y-0">
     {#if !isOngoing}
         <BackBtn />
     {/if}
-    <h1>New Session</h1>
+    <h1 class="min-w-0 text-2xl sm:text-3xl">New Session</h1>
 </header>
 
-<section class="space-y-3">
+<section class="gap-5 space-y-0">
     {#if isOngoing}
         <p>
             Date: <span class="font-bold">
@@ -100,23 +102,25 @@
             </span>
         </p>
     {:else}
-        <div class="flex justify-between">
-            <Label class="shrink-0">Date</Label>
-            <Input
+        <Field label="Date" id="session-date">
+            <FieldIcon icon={CalendarDays}><Input
+                id="session-date"
                 disabled={isOngoing}
                 type="date"
-                class="w-1/2"
+                class="pl-10"
                 bind:value={sessionManager.activeSession.date}
-            />
-        </div>
-        <div class="flex justify-between">
-            <Label class="shrink-0">Routine</Label>
-            <Combobox
+            /></FieldIcon>
+        </Field>
+        <Field label="Routine">
+            <FieldIcon icon={ListChecks}><Combobox
                 noun="routine"
+                ariaLabel="Routine"
+                triggerClass="pl-10"
+                class="w-[var(--bits-popover-anchor-width)]"
                 options={routineManager.options}
                 bind:value={sessionManager.activeSession.routineId}
-            />
-        </div>
+            /></FieldIcon>
+        </Field>
     {/if}
 </section>
 

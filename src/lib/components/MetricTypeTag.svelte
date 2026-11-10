@@ -8,12 +8,12 @@
 </script>
 
 {#if size == "sm"}
-    <div class={`py-1 px-2 rounded h-fit ${metric.colour}`}>
+    <div class={`py-1 px-2 rounded h-fit text-zinc-950 dark:text-zinc-100 ${metric.colour}`}>
         <metric.icon class="size-7 p-1" />
     </div>
 {:else}
     <div
-        class={`flex items-center gap-1.5 px-3 py-2 w-fit rounded ${metric.colour}`}
+        class={`flex items-center gap-1.5 px-3 py-2 w-fit rounded text-zinc-950 dark:text-zinc-100 ${metric.colour}`}
     >
         <metric.icon class="size-5" />
         <p class="text-sm font-medium">{metric.name}</p>

@@ -1,5 +1,7 @@
 import { v4 as uuidv4 } from "uuid";
-import { STORAGE_KEYS, type Result } from "./constants";
+import { type Result } from "./constants";
+import { cloud } from "./cloud.svelte";
+import { saveSession } from "./workout-repository";
 import { routineManager } from "./Routine.svelte";
 import {
     exerciseManager,
@@ -14,47 +16,36 @@ export interface Session {
     routineId: string;
     date: string;
     startTime?: Date;
+    createdAt?: string;
     effort?: number;
+    revision?: number;
+    routineName?: string;
 }
 
-export const DEFAULT_SESSION: Session = {
-    id: uuidv4(),
-    duration: 0,
-    exercises: [],
-    routineId: "custom",
-    date: new Date().toISOString().split("T")[0],
-};
+export function createDefaultSession(): Session {
+    const now = new Date();
+    const date = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    return { id: uuidv4(), duration: 0, exercises: [], routineId: "custom", date, createdAt: now.toISOString() };
+}
 
 class SessionManager {
-    sessions = $state<Record<string, Session>>({}); // date: session
-    loaded = $state(false);
-    activeSession = $state<Session>(DEFAULT_SESSION);
+    get sessions() { return cloud.data.sessions; }
+    activeSession = $state<Session>(createDefaultSession());
 
-    loadData() {
-        this.sessions = JSON.parse(
-            localStorage.getItem(STORAGE_KEYS.sessions) ?? "{}",
-        );
-        this.loaded = true;
-    }
-    updateData() {
-        localStorage.setItem(
-            STORAGE_KEYS.sessions,
-            JSON.stringify(this.sessions),
-        );
-    }
+    resetActiveSession() { this.activeSession = createDefaultSession(); }
     getLatestExercise(exerciseId: string): ExerciseMetric {
-        const latestSession = Object.entries(this.sessions)
-            .filter(([_, session]) =>
+        const latestSession = Object.values(this.sessions)
+            .filter((session) =>
                 session.exercises.some(
                     (exercise) => exercise.exerciseId == exerciseId,
                 ),
             )
-            .sort(([dateA], [dateB]) => dateB.localeCompare(dateA))[0]?.[1];
+            .sort(compareSessions)[0];
 
         if (latestSession === undefined) {
             const exercise = exerciseManager.getById(exerciseId);
 
-            switch (exercise.metricType) {
+            switch (exercise?.metricType ?? "weight") {
                 case "reps":
                     return {
                         sets: 0,
@@ -86,11 +77,10 @@ class SessionManager {
                     };
             }
         }
-        return latestSession.exercises.find((e) => e.exerciseId == exerciseId)!
-            .metric;
+        return { ...latestSession.exercises.find((e) => e.exerciseId == exerciseId)!.metric };
     }
 
-    addSession(newSession: Session): Result {
+    async addSession(newSession: Session): Promise<Result> {
         // validation
         if (newSession.exercises.length == 0)
             return {
@@ -98,47 +88,46 @@ class SessionManager {
                 message: "need to add exercises. no slacking.",
             };
 
-        if (newSession.duration <= 0)
+        if (!Number.isInteger(newSession.duration) || newSession.duration <= 0)
             return {
                 success: false,
                 message: "duration needs to be > 0 mins...",
             };
 
-        this.sessions[newSession.date] = newSession;
-        this.updateData();
-        return { success: true };
+        const value = $state.snapshot(newSession);
+        return cloud.mutate((client) => saveSession(client, value, true));
     }
-    addActiveSession() {
-        const result = this.addSession(this.activeSession);
-        this.activeSession = DEFAULT_SESSION;
+    async addActiveSession() {
+        const result = await this.addSession(this.activeSession);
+        if (result.success) this.activeSession = createDefaultSession();
         return result;
     }
 
     applyRoutine(session: Session): Session {
         if (session.routineId != "custom") {
             const routine = routineManager.getById(session.routineId);
-            session.exercises = [...routine.exercises];
+            session.exercises = (routine?.exercises ?? []).map((entry) => ({
+                ...entry,
+                id: uuidv4(),
+                metric: { ...(Object.values(this.sessions).some((saved) => saved.exercises.some((exercise) => exercise.exerciseId === entry.exerciseId))
+                    ? this.getLatestExercise(entry.exerciseId) : entry.metric) },
+            }));
         } else {
             session.exercises = [];
         }
         return session;
     }
 
-    removeExerciseEntries(exerciseIds: string[]) {
-        for (const session of Object.values(this.sessions)) {
-            session.exercises = session.exercises.filter(
-                (e) => !exerciseIds.includes(e.exerciseId),
-            );
-        }
-        this.activeSession.exercises = this.activeSession.exercises.filter(
-            (e) => !exerciseIds.includes(e.exerciseId),
-        );
-        this.updateData();
+    async updateSession(session: Session): Promise<Result> {
+        const value = $state.snapshot(session);
+        return cloud.mutate((client) => saveSession(client, value));
     }
-
-    deleteSession(date: string) {
-        delete this.sessions[date];
-        this.updateData();
+    async deleteSession(id: string, revision: number | undefined): Promise<Result> {
+        if (!revision) return { success: false, message: "Reload this session before deleting." };
+        return cloud.mutate(async (client) => {
+            const { error } = await client.rpc("delete_session", { p_id: id, p_expected_revision: revision });
+            if (error) throw error;
+        });
     }
 
     // for stats
@@ -174,14 +163,13 @@ class SessionManager {
         const todayDate = new Date();
         todayDate.setHours(0, 0, 0, 0);
 
-        const sessionDates = new Set<string>(
-            sessions.map((s) => new Date(s.date).toDateString()),
-        );
+        const sessionDates = new Set(sessions.map((s) => s.date));
 
         let streak = 0;
         let checkDate = new Date(todayDate);
 
-        while (sessionDates.has(checkDate.toDateString())) {
+        const localDate = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+        while (sessionDates.has(localDate(checkDate))) {
             streak++;
             checkDate = new Date(checkDate);
             checkDate.setDate(checkDate.getDate() - 1);
@@ -191,16 +179,16 @@ class SessionManager {
     }
     calculateWorkoutsThisWeek(): number {
         const now = new Date();
-        const startOfWeek = new Date(
-            now.setDate(now.getDate() - now.getDay() + 1),
-        );
+        const startOfWeek = new Date(now);
+        startOfWeek.setDate(now.getDate() - ((now.getDay() + 6) % 7));
         startOfWeek.setHours(0, 0, 0, 0);
 
         let count = 0;
         Object.values(this.sessions).forEach((session) => {
-            const sessionDate = new Date(session.date);
-            sessionDate.setHours(0, 0, 0, 0);
-            if (sessionDate >= startOfWeek) {
+            const sessionDate = new Date(`${session.date}T00:00:00`);
+            const endOfWeek = new Date(startOfWeek);
+            endOfWeek.setDate(endOfWeek.getDate() + 7);
+            if (sessionDate >= startOfWeek && sessionDate < endOfWeek) {
                 count++;
             }
         });
@@ -209,16 +197,26 @@ class SessionManager {
 
     // for calendar
     getMaxDuration(): number {
-        const durations = Object.values(this.sessions).map((s) => s.duration);
+        const durations = this.getDailyDurations();
         return durations.length > 0 ? Math.max(...durations) : 0;
     }
     getMinDuration(): number {
-        const durations = Object.values(this.sessions).map((s) => s.duration);
+        const durations = this.getDailyDurations();
         return durations.length > 0 ? Math.min(...durations) : 0;
     }
-    getLevel(date: number): number {
-        const duration =
-            sessionManager.sessions[date.toString()]?.duration ?? 0;
+    getSessionsForDate(date: string): Session[] {
+        return Object.values(this.sessions).filter((s) => s.date === date)
+            .sort(compareSessions);
+    }
+    getDailyDurations(): number[] {
+        const totals = new Map<string, number>();
+        for (const session of Object.values(this.sessions)) {
+            totals.set(session.date, (totals.get(session.date) ?? 0) + session.duration);
+        }
+        return [...totals.values()];
+    }
+    getLevel(date: string): number {
+        const duration = this.getSessionsForDate(date).reduce((total, session) => total + session.duration, 0);
         if (duration == 0) return 0;
 
         const minDuration = this.getMinDuration();
@@ -233,3 +231,13 @@ class SessionManager {
 }
 
 export const sessionManager = new SessionManager();
+
+export function compareSessions(a: Session, b: Session): number {
+    const date = b.date.localeCompare(a.date);
+    if (date) return date;
+    if (a.startTime && b.startTime) {
+        const time = b.startTime.getTime() - a.startTime.getTime();
+        if (time) return time;
+    } else if (a.startTime || b.startTime) return a.startTime ? -1 : 1;
+    return (b.createdAt ?? "").localeCompare(a.createdAt ?? "") || b.id.localeCompare(a.id);
+}

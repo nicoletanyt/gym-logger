@@ -5,10 +5,14 @@
     import MetricTypeTag from "$lib/components/MetricTypeTag.svelte";
     import CardStat from "$lib/components/CardStat.svelte";
     import ConfirmDialog from "$lib/components/ConfirmDialog.svelte";
+    import ExerciseImage from "$lib/components/ExerciseImage.svelte";
+    import ExerciseImagePicker from "$lib/components/ExerciseImagePicker.svelte";
+    import { cloud } from "$lib/cloud.svelte";
     import AreaChart from "$lib/components/charts/AreaChart.svelte";
     import Button from "$lib/components/ui/button/button.svelte";
     import Input from "$lib/components/ui/input/input.svelte";
-    import { Check, Pencil, Trash2 } from "@lucide/svelte";
+    import { Check, Pencil, PencilLine, Trash2 } from "@lucide/svelte";
+    import FieldIcon from "$lib/components/FieldIcon.svelte";
     import { formatDuration } from "$lib/constants";
     import {
         exerciseManager,
@@ -19,28 +23,34 @@
         type Weight,
     } from "$lib/Exercise.svelte";
     import { sessionManager } from "$lib/Session.svelte";
-    import { routineManager } from "$lib/Routine.svelte";
 
     const id = $derived(page.params.id ?? "");
     const exercise = $derived(exerciseManager.getById(id));
 
     let isEdit = $state(false);
     let draftName = $state("");
+    let draftImage = $state("");
+    let imageFile = $state<File | null>(null);
+    let editRevision = $state<number | undefined>();
 
-    function toggleEdit() {
+    async function toggleEdit() {
+        if (!exercise) return;
         if (isEdit) {
-            exerciseManager.updateExercise({ ...exercise, name: draftName });
+            const result = await exerciseManager.updateExercise({ ...exercise, name: draftName, imageLink: draftImage, revision: editRevision }, imageFile);
+            if (!result.success) { alert(result.message); return; }
         } else {
             draftName = exercise.name;
+            draftImage = exercise.imageLink ?? "";
+            imageFile = null;
+            editRevision = exercise.revision;
         }
         isEdit = !isEdit;
     }
 
-    function deleteExercise() {
-        exerciseManager.removeExercises([id]);
-        sessionManager.removeExerciseEntries([id]);
-        routineManager.removeExerciseEntries([id]);
-        goto("/exercises");
+    async function deleteExercise() {
+        const result = await exerciseManager.removeExercises([id]);
+        if (result.success) goto("/exercises");
+        else alert(result.message);
     }
 
     const sessionEntries = $derived(
@@ -58,7 +68,7 @@
     };
 
     const repsStats = $derived.by((): RepsStats | null => {
-        if (exercise.metricType != "reps") return null;
+        if (exercise?.metricType != "reps") return null;
         const list = sessionEntries
             .filter((e) => e.metric.type == "reps")
             .map((e) => ({ date: e.date, metric: e.metric as Reps }));
@@ -87,7 +97,7 @@
     };
 
     const durationStats = $derived.by((): DurationStats | null => {
-        if (exercise.metricType != "duration") return null;
+        if (exercise?.metricType != "duration") return null;
         const list = sessionEntries
             .filter((e) => e.metric.type == "duration")
             .map((e) => ({ date: e.date, metric: e.metric as Duration }));
@@ -113,7 +123,7 @@
     };
 
     const cardioStats = $derived.by((): CardioStats | null => {
-        if (exercise.metricType != "cardio") return null;
+        if (exercise?.metricType != "cardio") return null;
         const list = sessionEntries
             .filter((e) => e.metric.type == "cardio")
             .map((e) => ({ date: e.date, metric: e.metric as Cardio }));
@@ -147,7 +157,7 @@
     };
 
     const weightStats = $derived.by((): WeightStats | null => {
-        if (exercise.metricType != "weight") return null;
+        if (exercise?.metricType != "weight") return null;
         const list = sessionEntries
             .filter((e) => e.metric.type == "weight")
             .map((e) => ({ date: e.date, metric: e.metric as Weight }));
@@ -185,13 +195,19 @@
     }
 </script>
 
+{#if exercise}
 <header>
-    <div class="flex justify-between">
+    <div class="flex items-center gap-4">
         <BackBtn dest="/exercises" />
-        <div class="space-x-3">
+        {#if isEdit}
+            <FieldIcon icon={PencilLine} class="min-w-0 flex-1"><Input bind:value={draftName} aria-label="Exercise name" class="min-w-0 text-2xl sm:text-3xl py-5 pl-10 pr-2 font-bold" /></FieldIcon>
+        {:else}
+            <h1 class="min-w-0 flex-1 break-words text-2xl sm:text-3xl">{exercise.name}</h1>
+        {/if}
+        <div class="flex shrink-0 gap-3">
             <ConfirmDialog
                 title="Delete Exercise?"
-                description={`This will permanently delete "${exercise.name}" and all related data, including every entry of it in your sessions and routines.`}
+                description={`This will remove "${exercise.name}" from your exercises and routines. Your workout history will be kept.`}
                 onconfirm={deleteExercise}
                 buttonVar="destructive"
             >
@@ -201,6 +217,7 @@
             </ConfirmDialog>
             <Button
                 variant={"outline"}
+                disabled={cloud.saving || cloud.loading || cloud.needsReload}
                 onclick={() => {
                     toggleEdit();
                 }}
@@ -213,12 +230,12 @@
             </Button>
         </div>
     </div>
-    {#if isEdit}
-        <Input bind:value={draftName} class="text-3xl py-5 px-2 font-bold" />
-    {:else}
-        <h1>{exercise.name}</h1>
-    {/if}
     <MetricTypeTag metric={METRICS[exercise.metricType]} />
+    {#if isEdit}
+        <ExerciseImagePicker bind:imageLink={draftImage} bind:file={imageFile} />
+    {:else}
+        <ExerciseImage src={exercise.imageLink} alt={`${exercise.name} image`} class="mt-4 h-48 w-full rounded-lg" />
+    {/if}
 </header>
 
 {#if sessionEntries.length == 0}
@@ -319,4 +336,7 @@
             format={formatKm}
         />
     </section>
+{/if}
+{:else}
+    <header class="flex items-center gap-4 space-y-0"><BackBtn dest="/exercises" /><h1 class="min-w-0 text-2xl sm:text-3xl">Exercise not found</h1></header><p>This exercise is unavailable in your account.</p>
 {/if}
