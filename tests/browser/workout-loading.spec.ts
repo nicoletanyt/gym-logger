@@ -56,16 +56,118 @@ test("exercise image picker supports library selection and upload validation", a
     await page.getByRole('link', { name: 'Exercises', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Exercises', exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'Add', exact: true }).click();
+    const type = page.getByRole('combobox', { name: 'Exercise Type' });
+    await type.click();
+    const popover = page.locator('[data-slot="popover-content"]:visible');
+    await expect.poll(async () => {
+        const triggerBox = await type.boundingBox();
+        const popoverBox = await popover.boundingBox();
+        return triggerBox && popoverBox ? Math.abs(triggerBox.width - popoverBox.width) : Infinity;
+    }).toBeLessThan(2);
+    await page.keyboard.press('Escape');
+    await page.getByRole('button', { name: 'Choose from library' }).click();
+    await expect(page.getByRole('dialog', { name: 'Choose an exercise image' })).toBeVisible();
+    await page.setViewportSize({ width: 390, height: 850 });
     await page.getByRole('button', { name: 'Dumbbell', exact: true }).click();
+    await expect(page.getByRole('dialog', { name: 'Choose an exercise image' })).not.toBeVisible();
+    await page.getByRole('button', { name: 'Choose from library' }).click();
     await expect(page.getByRole('button', { name: 'Dumbbell', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await page.keyboard.press('Escape');
     const input = page.getByLabel('Upload a photo');
     await input.setInputFiles({ name: 'bad.svg', mimeType: 'image/svg+xml', buffer: Buffer.from('<svg/>') });
     await expect(page.getByRole('alert')).toContainText('JPEG, PNG, or WebP');
     await input.setInputFiles({ name: 'photo.png', mimeType: 'image/png', buffer: Buffer.from('test image') });
     await expect(page.getByRole('alert')).toHaveCount(0);
+    await page.getByRole('button', { name: 'Choose from library' }).click();
     await expect(page.getByRole('button', { name: 'Dumbbell', exact: true })).toHaveAttribute('aria-pressed', 'false');
+    await page.keyboard.press('Escape');
     await page.getByRole('button', { name: 'Remove image' }).click();
     await expect(page.getByLabel('Selected exercise image')).toBeVisible();
+});
+
+test("creation page headers stay aligned on mobile and desktop", async ({ page }) => {
+    await mockSignIn(page);
+    for (const width of [390, 1280]) {
+        await page.setViewportSize({ width, height: 850 });
+        await page.getByRole("link", { name: "Exercises", exact: true }).click();
+        await page.getByRole("button", { name: "Add", exact: true }).click();
+        const heading = page.getByRole("heading", { name: "Create Exercise" });
+        const back = page.getByRole("button", { name: "Back", exact: true });
+        const headingBox = await heading.boundingBox();
+        const backBox = await back.boundingBox();
+        expect(headingBox && backBox && Math.abs((headingBox.y + headingBox.height / 2) - (backBox.y + backBox.height / 2))).toBeLessThan(2);
+        await back.click();
+        await page.getByRole("link", { name: "Routines", exact: true }).click();
+        await page.getByRole("button", { name: "Add", exact: true }).click();
+        const routineHeading = await page.getByRole("heading", { name: "Create Routine" }).boundingBox();
+        const routineBack = await page.getByRole("link", { name: "Back", exact: true }).boundingBox();
+        expect(routineHeading && routineBack && Math.abs((routineHeading.y + routineHeading.height / 2) - (routineBack.y + routineBack.height / 2))).toBeLessThan(2);
+    }
+});
+
+test("creation actions remain at the bottom of the scrollable page", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 600 });
+    await mockSignIn(page);
+    for (const [section, action] of [["Exercises", "Add Exercise"], ["Routines", "Add Routine"]]) {
+        await page.getByRole("link", { name: section, exact: true }).click();
+        await page.getByRole("button", { name: "Add", exact: true }).click();
+        const button = page.getByRole("button", { name: action, exact: true });
+        const main = page.getByRole("main");
+        const mainBox = await main.boundingBox();
+        const buttonBox = await button.boundingBox();
+        expect(buttonBox!.height).toBeGreaterThanOrEqual(48);
+        expect(mainBox!.y + mainBox!.height - (buttonBox!.y + buttonBox!.height)).toBeLessThan(20);
+        await main.evaluate((element) => { element.scrollTop = element.scrollHeight; });
+        await expect(button).toBeInViewport();
+    }
+});
+
+test("nested exercise creation is a page and returns to the unsaved routine", async ({ page }) => {
+    await mockSignIn(page);
+    await page.getByRole("link", { name: "Routines", exact: true }).click();
+    await page.getByRole("button", { name: "Add", exact: true }).click();
+    await expect(page).toHaveURL(/\/routines\/new$/);
+    await page.getByLabel("Name", { exact: true }).fill("My unfinished routine");
+    await page.getByRole("button", { name: "Add exercise", exact: true }).click();
+    await page.getByRole("combobox").click();
+    await page.getByPlaceholder("Search exercise...").fill("Cable row");
+    await page.getByText('Create "Cable row"').click();
+    await expect(page).toHaveURL(/\/exercises\/new$/);
+    await expect(page.getByRole("heading", { name: "Create Exercise" })).toBeVisible();
+    await expect(page.getByRole("textbox", { name: "Name", exact: true })).toHaveValue("Cable row");
+    await page.getByRole("button", { name: "Back", exact: true }).click();
+    await expect(page).toHaveURL(/\/routines\/new$/);
+    await page.getByRole("button", { name: "Close", exact: true }).click();
+    await expect(page.getByLabel("Name", { exact: true })).toHaveValue("My unfinished routine");
+});
+
+test("saving a nested exercise selects it without losing the routine draft", async ({ page }) => {
+    await mockSignIn(page);
+    let saved: Record<string, unknown> | null = null;
+    await page.route("**/rest/v1/**", async (route) => {
+        const url = new URL(route.request().url());
+        if (url.pathname.endsWith("/rpc/save_exercise")) {
+            saved = route.request().postDataJSON().p_exercise;
+            return route.fulfill({ status: 200, contentType: "application/json", body: "null" });
+        }
+        const rows = url.pathname.endsWith("/exercises") && saved
+            ? [{ id: saved.id, user_id: user.id, name: saved.name, metric_type: saved.metricType, image_link: "", note: "", archived: false, revision: 1 }]
+            : [];
+        return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(rows) });
+    });
+    await page.getByRole("link", { name: "Routines", exact: true }).click();
+    await page.getByRole("button", { name: "Add", exact: true }).click();
+    await page.getByRole("textbox", { name: "Name", exact: true }).fill("Strength day");
+    await page.getByRole("button", { name: "Add exercise", exact: true }).click();
+    await page.getByRole("combobox").click();
+    await page.getByPlaceholder("Search exercise...").fill("Cable row");
+    await page.getByText('Create "Cable row"').click();
+    await expect(page.getByRole("dialog", { name: "Add Exercise" })).not.toBeVisible();
+    await page.getByRole("main").getByRole("button", { name: "Add Exercise", exact: true }).click();
+    await expect(page).toHaveURL(/\/routines\/new$/);
+    await expect(page.getByRole("combobox")).toContainText("Cable row");
+    await page.getByRole("button", { name: "Close", exact: true }).click();
+    await expect(page.getByRole("textbox", { name: "Name", exact: true })).toHaveValue("Strength day");
 });
 
 test("a delayed initial Auth event cannot clear an already loaded homepage", async ({ page }) => {

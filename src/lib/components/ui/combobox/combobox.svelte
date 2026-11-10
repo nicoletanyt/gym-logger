@@ -12,6 +12,7 @@
         ref = $bindable(null),
         options = $bindable<Options[]>(),
         noun,
+        ariaLabel,
         onChange = () => {},
         onCreate,
         value = $bindable<string>(""),
@@ -21,6 +22,7 @@
         ref?: HTMLButtonElement | null;
         options: Options[];
         noun: string;
+        ariaLabel?: string;
         onChange?: () => void;
         onCreate?: (name: string) => void;
         value?: string;
@@ -61,6 +63,7 @@
                 variant="outline"
                 class="w-full justify-between"
                 role="combobox"
+                aria-label={ariaLabel}
                 aria-expanded={open}
             >
                 {selectedValue || `Select a ${noun} ...`}

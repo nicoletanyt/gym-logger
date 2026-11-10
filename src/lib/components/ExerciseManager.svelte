@@ -6,7 +6,6 @@
     import {
         exerciseManager,
         METRICS,
-        type Exercise,
         type ExerciseEntry,
         type ExerciseMetric,
         type MetricType,
@@ -20,7 +19,9 @@
     import MetricDisplay from "./MetricDisplay.svelte";
     import { sessionManager } from "$lib/Session.svelte";
     import { cloud } from "$lib/cloud.svelte";
-    import ExerciseImagePicker from "./ExerciseImagePicker.svelte";
+    import { pushState } from "$app/navigation";
+    import { page } from "$app/state";
+    import { takeCreatedExercise } from "$lib/exercise-creation";
 
     let {
         exercises = $bindable(),
@@ -33,9 +34,8 @@
 
     let showAdd = $state(false);
     let showEdit = $state(false);
-    let showCreateExercise = $state(false);
-    let newExercise = $state<Exercise>(exerciseManager.createDefaultExercise());
-    let imageFile = $state<File | null>(null);
+    let creationToken = $state<string | null>(null);
+    let creationVisible = false;
 
     function deleteItems() {
         exercises = exercises.filter((e) => !selectedRows.includes(e.id));
@@ -88,19 +88,29 @@
     }
 
     function onExerciseCreated(name: string) {
-        newExercise = exerciseManager.createDefaultExercise();
-        newExercise.name = name;
-        showCreateExercise = true;
+        const token = crypto.randomUUID();
+        showAdd = false;
+        creationVisible = false;
+        creationToken = token;
+        pushState("/exercises/new", { createExercise: { name, token } });
     }
 
-    async function saveNewExercise() {
-        const result = await exerciseManager.addExercise({ ...newExercise }, imageFile);
-        if (!result.success) { alert(result.message); return; }
-        exerciseId = newExercise.id;
-        metric = createMetric(newExercise.metricType);
-        showCreateExercise = false;
+    $effect(() => {
+        if (!creationToken) return;
+        if (page.state.createExercise?.token === creationToken) {
+            creationVisible = true;
+            return;
+        }
+        if (!creationVisible) return;
+        const createdId = takeCreatedExercise(creationToken);
+        creationVisible = false;
         showAdd = true;
-    }
+        if (createdId) {
+            exerciseId = createdId;
+            const created = exerciseManager.getById(createdId);
+            if (created) metric = createMetric(created.metricType);
+        }
+    });
 
     $effect(() => {
         if (!showAdd) {
@@ -109,10 +119,6 @@
         }
         if (!showEdit) {
             selectedRows = [];
-        }
-        if (!showCreateExercise) {
-            newExercise = exerciseManager.createDefaultExercise();
-            imageFile = null;
         }
     });
 </script>
@@ -181,6 +187,7 @@
             {#if !showEdit}
                 <Button
                     variant="secondary"
+                    aria-label="Edit exercises"
                     onclick={() => {
                         showEdit = true;
                     }}
@@ -190,6 +197,7 @@
             {/if}
             <Button
                 variant={showEdit ? "success" : "default"}
+                aria-label={showEdit ? "Done editing exercises" : "Add exercise"}
                 onclick={() => {
                     if (showEdit) showEdit = false;
                     else showAdd = true;
@@ -282,57 +290,6 @@
                     showAdd = false;
                     showEdit = false;
                 } else alert(result.message);
-            }}
-        />
-    </Sheet.Content>
-</Sheet.Root>
-
-<Sheet.Root bind:open={showCreateExercise}>
-    <Sheet.Content side="bottom" class="min-h-150 max-h-[90vh] overflow-y-auto p-4 pb-24" showCloseButton={false} inert={cloud.saving || cloud.needsReload || cloud.loading}>
-        <Sheet.Header class="flex justify-between items-center">
-            <Sheet.Title>Create New Exercise</Sheet.Title>
-            <Button
-                variant="ghost"
-                size="icon-sm"
-                onclick={() => {
-                    showCreateExercise = false;
-                }}
-            >
-                <XIcon />
-                <span class="sr-only">Close</span>
-            </Button>
-        </Sheet.Header>
-        <section class="px-4 my-0">
-            <Field label="Name">
-                <Input bind:value={newExercise.name} />
-            </Field>
-            <Field label="Exercise Type">
-                <Combobox
-                    noun="type"
-                    options={Object.values(METRICS).map((m) => {
-                        return {
-                            value: m.name.toLowerCase(),
-                            label: m.name,
-                        };
-                    })}
-                    bind:value={newExercise.metricType}
-                />
-            </Field>
-            <ExerciseImagePicker bind:imageLink={newExercise.imageLink} bind:file={imageFile} />
-            <Field label="Note">
-                <Input bind:value={newExercise.note} />
-            </Field>
-        </section>
-
-        <ActionButton
-            text="Add Exercise"
-            onOverlay={true}
-            onclick={() => {
-                if (!newExercise.name.trim()) {
-                    alert("Name is compulsory");
-                    return;
-                }
-                saveNewExercise();
             }}
         />
     </Sheet.Content>
