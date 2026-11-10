@@ -8,12 +8,18 @@
     import { STORAGE_KEYS } from "$lib/constants";
     import { onMount } from "svelte";
     import { getThemePreference, setThemePreference, THEME_STORAGE_KEY, type ThemePreference } from "$lib/theme";
-    import { Download, KeyRound, LogOut, Mail, Monitor, Moon, Sun, Upload } from "@lucide/svelte";
+    import { Check, ChevronDown, Download, KeyRound, LogOut, Mail, Monitor, Moon, Sun, Upload } from "@lucide/svelte";
+    import { Select } from "bits-ui";
+    import { Input } from "$lib/components/ui/input/index.js";
+    import { Label } from "$lib/components/ui/label/index.js";
+    import FieldIcon from "$lib/components/FieldIcon.svelte";
 
     let signingOut = $state(false);
     let error = $state("");
     let hasLegacyData = $state(false);
     let appearance = $state<ThemePreference>("system");
+    const appearanceOptions = [{ value: "system", label: "System", icon: Monitor }, { value: "light", label: "Light", icon: Sun }, { value: "dark", label: "Dark", icon: Moon }] as const;
+    const selectedAppearance = $derived(appearanceOptions.find((option) => option.value === appearance) ?? appearanceOptions[0]);
     onMount(() => {
         appearance = getThemePreference();
         const onStorage = (event: StorageEvent) => {
@@ -59,23 +65,34 @@
         <BackBtn />
         <h1 class="min-w-0 text-2xl sm:text-3xl">Profile</h1>
     </div>
-    <p class="flex min-w-0 items-center gap-2 text-muted-foreground"><Mail aria-hidden="true" class="size-4 shrink-0" /><span class="min-w-0 break-words"><span class="font-medium text-foreground">Email:</span> {page.data.user?.email}</span></p>
+    <div class="mt-4 max-w-md space-y-2">
+        <Label for="profile-email">Email</Label>
+        <FieldIcon icon={Mail}>
+            <Input id="profile-email" type="email" value={page.data.user?.email ?? ""} readonly aria-readonly="true" class="h-11 pl-10" />
+        </FieldIcon>
+    </div>
 </header>
 
-<section class="my-8 gap-3 space-y-0">
-    <div class="space-y-1">
-        <h2>Appearance</h2>
-        <p class="text-sm text-muted-foreground">Choose how Gym Logger looks on this device.</p>
-    </div>
-    <fieldset class="grid grid-cols-3 gap-2" aria-label="Appearance">
-        {#each [{ value: "system", label: "System", icon: Monitor }, { value: "light", label: "Light", icon: Sun }, { value: "dark", label: "Dark", icon: Moon }] as option}
-            <label class="flex min-w-0 cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border px-2 py-3 text-sm font-medium transition-colors has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ring {appearance === option.value ? 'border-foreground bg-muted' : 'border-border bg-card hover:bg-muted'}">
-                <input type="radio" class="sr-only" name="appearance" value={option.value} checked={appearance === option.value} onchange={() => { appearance = option.value as ThemePreference; setThemePreference(appearance); }} />
-                <option.icon aria-hidden="true" class="size-5" />
-                {option.label}
-            </label>
-        {/each}
-    </fieldset>
+<section class="my-8 max-w-md space-y-2">
+    <Label for="profile-appearance">Appearance</Label>
+    <Select.Root type="single" value={appearance} items={appearanceOptions.map(({ value, label }) => ({ value, label }))} onValueChange={(value) => { if (value === "system" || value === "light" || value === "dark") { appearance = value; setThemePreference(value); } }}>
+        <Select.Trigger id="profile-appearance" class="flex h-11 w-full items-center gap-3 rounded-md border border-input bg-field px-3 text-left text-base shadow-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm">
+            <selectedAppearance.icon aria-hidden="true" class="size-4 shrink-0 text-muted-foreground" />
+            <span class="flex-1">{selectedAppearance.label}</span>
+            <ChevronDown aria-hidden="true" class="size-4 text-muted-foreground" />
+        </Select.Trigger>
+        <Select.Portal>
+            <Select.Content class="z-50 w-[var(--bits-select-anchor-width)] rounded-md border bg-popover p-1 text-popover-foreground shadow-md" sideOffset={4}>
+                {#each appearanceOptions as option}
+                    <Select.Item value={option.value} label={option.label} class="flex min-h-10 cursor-pointer items-center gap-3 rounded-sm px-2 text-sm outline-none data-highlighted:bg-accent data-highlighted:text-accent-foreground">
+                        <option.icon aria-hidden="true" class="size-4 text-muted-foreground" />
+                        <span class="flex-1">{option.label}</span>
+                        {#if appearance === option.value}<Check aria-hidden="true" class="size-4" />{/if}
+                    </Select.Item>
+                {/each}
+            </Select.Content>
+        </Select.Portal>
+    </Select.Root>
 </section>
 
 <section class="my-8 gap-3 space-y-0">
@@ -103,6 +120,6 @@
     <h2>Security</h2>
     <Button href="/reset-password" variant="outline" class="h-auto min-h-12 w-full justify-start gap-3 whitespace-normal px-4 py-3 text-left"><KeyRound aria-hidden="true" /> Change Password</Button>
     {#if error}<p role="alert" class="text-destructive">{error}</p>{/if}
-    <Button onclick={signOut} variant="outline" class="h-auto min-h-12 w-full justify-start gap-3 whitespace-normal px-4 py-3 text-left" disabled={signingOut}><LogOut aria-hidden="true" /> {signingOut ? "Signing out…" : "Sign out"}</Button>
+    <Button onclick={signOut} variant="destructive" class="h-auto min-h-12 w-full justify-start gap-3 whitespace-normal px-4 py-3 text-left" disabled={signingOut}><LogOut aria-hidden="true" /> {signingOut ? "Signing out…" : "Sign out"}</Button>
 </section>
 </div>

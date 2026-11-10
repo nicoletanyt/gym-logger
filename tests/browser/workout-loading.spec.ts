@@ -63,10 +63,18 @@ test("homepage actions and statistics work across viewport sizes", async ({ page
         expect(Math.abs(logBox!.width - startBox!.width)).toBeLessThan(2);
         await expect(start).toHaveClass(/border-border/);
         const stats = page.getByRole("region", { name: "Workout statistics" });
-        for (const label of ["Total Sessions", "Total Time", "Streak", "Workouts this week"]) {
+        for (const label of ["Total Sessions", "Avg time per session", "Streak", "Workouts this week"]) {
             await expect(stats.getByText(label, { exact: true })).toBeVisible();
         }
-        await expect(stats.locator('[data-slot="card-title"]')).toHaveText(["Streak", "Workouts this week", "Total Sessions", "Total Time"]);
+        await expect(stats.locator('[data-slot="card-title"]')).toHaveText(["Streak", "Workouts this week", "Total Sessions", "Avg time per session"]);
+        for (const card of await stats.locator('[data-slot="card"]').all()) {
+            const icon = await card.locator(":scope > svg").boundingBox();
+            const title = await card.locator('[data-slot="card-title"]').boundingBox();
+            const value = await card.locator('[data-slot="card-content"] p').boundingBox();
+            expect(icon!.x + icon!.width).toBeLessThanOrEqual(title!.x);
+            expect(value!.y).toBeGreaterThanOrEqual(title!.y + title!.height);
+        }
+        await expect(stats.getByText("Avg time per session").locator("../..")).toContainText("0s");
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     }
     await page.evaluate(async () => {
@@ -78,9 +86,16 @@ test("homepage actions and statistics work across viewport sizes", async ({ page
     });
     const stats = page.getByRole("region", { name: "Workout statistics" });
     await expect(stats.getByText("Total Sessions").locator("../..")).toContainText("1");
-    await expect(stats.getByText("Total Time").locator("../..")).toContainText("30m");
+    await expect(stats.getByText("Avg time per session").locator("../..")).toContainText("30m");
     await expect(stats.getByText("Streak", { exact: true }).locator("../..")).toContainText("1 day");
     await expect(stats.getByText("Workouts this week").locator("../..")).toContainText("1");
+    await page.evaluate(async () => {
+        const modulePath = "/src/lib/cloud.svelte.ts";
+        const { cloud } = await import(modulePath);
+        cloud.data.sessions["second-session"] = { id: "second-session", date: "2025-01-01", duration: 600, routineId: "custom", exercises: [] };
+    });
+    await expect(stats.getByText("Total Sessions").locator("../..")).toContainText("2");
+    await expect(stats.getByText("Avg time per session").locator("../..")).toContainText("20m");
     await page.getByRole("link", { name: "Start Session" }).click();
     await expect(page).toHaveURL(/\/sessions\/new$/);
     await page.getByRole("link", { name: "Home", exact: true }).click();
@@ -119,14 +134,20 @@ test("appearance follows the system and supports saved overrides", async ({ page
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.locator("header").first().getByRole("button").click();
     await expect(page.getByRole("heading", { name: "Profile" })).toBeVisible();
-    await expect(page.getByRole("radio", { name: "System" })).toBeChecked();
-    await page.getByText("Light", { exact: true }).click();
+    await expect(page.getByRole("button", { name: "Appearance" })).toContainText("System");
+    await page.getByRole("button", { name: "Appearance" }).click();
+    for (const option of ["System", "Light", "Dark"]) {
+        await expect(page.getByRole("option", { name: option }).locator('svg[aria-hidden="true"]').first()).toBeVisible();
+    }
+    await page.getByRole("option", { name: "Light" }).click();
     await expect(page.locator("html")).not.toHaveClass(/dark/);
     expect(await page.evaluate(() => localStorage.getItem("gym-logger-theme"))).toBe("light");
-    await page.getByText("Dark", { exact: true }).click();
+    await page.getByRole("button", { name: "Appearance" }).click();
+    await page.getByRole("option", { name: "Dark" }).click();
     await page.emulateMedia({ colorScheme: "light" });
     await expect(page.locator("html")).toHaveClass(/dark/);
-    await page.getByText("System", { exact: true }).click();
+    await page.getByRole("button", { name: "Appearance" }).click();
+    await page.getByRole("option", { name: "System" }).click();
     await expect(page.locator("html")).not.toHaveClass(/dark/);
     await page.emulateMedia({ colorScheme: "dark" });
     await expect(page.locator("html")).toHaveClass(/dark/);
@@ -146,11 +167,12 @@ test("appearance changes synchronize across tabs", async ({ page, context }) => 
     await other.goto("/sign-in");
     await other.evaluate(() => localStorage.setItem("gym-logger-theme", "dark"));
     await expect(page.locator("html")).toHaveClass(/dark/);
-    await expect(page.getByRole("radio", { name: "Dark" })).toBeChecked();
-    await page.getByText("Light", { exact: true }).click();
+    await expect(page.getByRole("button", { name: "Appearance" })).toContainText("Dark");
+    await page.getByRole("button", { name: "Appearance" }).click();
+    await page.getByRole("option", { name: "Light" }).click();
     await expect(other.locator("html")).not.toHaveClass(/dark/);
     await other.evaluate(() => localStorage.removeItem("gym-logger-theme"));
-    await expect(page.getByRole("radio", { name: "System" })).toBeChecked();
+    await expect(page.getByRole("button", { name: "Appearance" })).toContainText("System");
     await other.close();
 });
 
@@ -161,7 +183,8 @@ test("profile actions have icons, fit both themes, and keep exports working", as
     await expect(page.getByRole("heading", { name: "Profile" })).toBeVisible();
     for (const [width, theme] of [[320, "Light"], [1280, "Dark"]] as const) {
         await page.setViewportSize({ width, height: 900 });
-        await page.getByText(theme, { exact: true }).click();
+        await page.getByRole("button", { name: "Appearance" }).click();
+        await page.getByRole("option", { name: theme }).click();
         for (const name of ["Import Data", "Export Cloud Data", "Download Previous Browser Data", "Sign out"]) {
             const button = page.getByRole("button", { name, exact: true });
             await expect(button.locator('svg[aria-hidden="true"]')).toBeVisible();
