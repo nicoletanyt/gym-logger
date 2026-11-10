@@ -51,6 +51,23 @@ test("successful empty workout responses replace the homepage loading state", as
     expect(errors).toEqual([]);
 });
 
+test("exercise image picker supports library selection and upload validation", async ({ page }) => {
+    await mockSignIn(page);
+    await page.getByRole('link', { name: 'Exercises', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Exercises', exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Add', exact: true }).click();
+    await page.getByRole('button', { name: 'Dumbbell', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Dumbbell', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    const input = page.getByLabel('Upload a photo');
+    await input.setInputFiles({ name: 'bad.svg', mimeType: 'image/svg+xml', buffer: Buffer.from('<svg/>') });
+    await expect(page.getByRole('alert')).toContainText('JPEG, PNG, or WebP');
+    await input.setInputFiles({ name: 'photo.png', mimeType: 'image/png', buffer: Buffer.from('test image') });
+    await expect(page.getByRole('alert')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Dumbbell', exact: true })).toHaveAttribute('aria-pressed', 'false');
+    await page.getByRole('button', { name: 'Remove image' }).click();
+    await expect(page.getByLabel('Selected exercise image')).toBeVisible();
+});
+
 test("a delayed initial Auth event cannot clear an already loaded homepage", async ({ page }) => {
     await mockSignIn(page);
     await expect(page.getByRole("heading", { name: "Gym Logger", exact: true })).toBeVisible();

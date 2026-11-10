@@ -20,6 +20,7 @@
     import MetricDisplay from "./MetricDisplay.svelte";
     import { sessionManager } from "$lib/Session.svelte";
     import { cloud } from "$lib/cloud.svelte";
+    import ExerciseImagePicker from "./ExerciseImagePicker.svelte";
 
     let {
         exercises = $bindable(),
@@ -34,6 +35,7 @@
     let showEdit = $state(false);
     let showCreateExercise = $state(false);
     let newExercise = $state<Exercise>(exerciseManager.createDefaultExercise());
+    let imageFile = $state<File | null>(null);
 
     function deleteItems() {
         exercises = exercises.filter((e) => !selectedRows.includes(e.id));
@@ -92,7 +94,7 @@
     }
 
     async function saveNewExercise() {
-        const result = await exerciseManager.addExercise({ ...newExercise });
+        const result = await exerciseManager.addExercise({ ...newExercise }, imageFile);
         if (!result.success) { alert(result.message); return; }
         exerciseId = newExercise.id;
         metric = createMetric(newExercise.metricType);
@@ -110,6 +112,7 @@
         }
         if (!showCreateExercise) {
             newExercise = exerciseManager.createDefaultExercise();
+            imageFile = null;
         }
     });
 </script>
@@ -205,7 +208,7 @@
 
 <Sheet.Root bind:open={showAdd}>
     <!-- Add Buttton -->
-    <Sheet.Content side="bottom" class="min-h-150 p-4" showCloseButton={false} inert={cloud.saving || cloud.needsReload || cloud.loading}>
+    <Sheet.Content side="bottom" class="min-h-150 max-h-[90vh] overflow-y-auto p-4" showCloseButton={false} inert={cloud.saving || cloud.needsReload || cloud.loading}>
         <Sheet.Header class="flex justify-between items-center">
             <Sheet.Title>{showEdit ? "Edit" : "Add"} Exercise</Sheet.Title>
             <Button
@@ -285,7 +288,7 @@
 </Sheet.Root>
 
 <Sheet.Root bind:open={showCreateExercise}>
-    <Sheet.Content side="bottom" class="min-h-150 p-4" showCloseButton={false} inert={cloud.saving || cloud.needsReload || cloud.loading}>
+    <Sheet.Content side="bottom" class="min-h-150 max-h-[90vh] overflow-y-auto p-4 pb-24" showCloseButton={false} inert={cloud.saving || cloud.needsReload || cloud.loading}>
         <Sheet.Header class="flex justify-between items-center">
             <Sheet.Title>Create New Exercise</Sheet.Title>
             <Button
@@ -315,9 +318,7 @@
                     bind:value={newExercise.metricType}
                 />
             </Field>
-            <Field label="Image Link">
-                <Input bind:value={newExercise.imageLink} />
-            </Field>
+            <ExerciseImagePicker bind:imageLink={newExercise.imageLink} bind:file={imageFile} />
             <Field label="Note">
                 <Input bind:value={newExercise.note} />
             </Field>

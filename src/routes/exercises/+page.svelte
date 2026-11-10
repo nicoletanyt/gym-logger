@@ -1,5 +1,6 @@
 <script lang="ts">
     import ExerciseCard from "$lib/components/ExerciseCard.svelte";
+    import ExerciseImagePicker from "$lib/components/ExerciseImagePicker.svelte";
     import {
         exerciseManager,
         METRICS,
@@ -20,6 +21,7 @@
     import { Check, Trash, X, Pencil } from "@lucide/svelte";
 
     let newExercise = $state<Exercise>(exerciseManager.createDefaultExercise());
+    let imageFile = $state<File | null>(null);
     let showAdd = $state(false);
     let isEditing = $state(false);
     let selectedIds = $state<string[]>([]);
@@ -127,7 +129,7 @@
 
 <Sheet.Root bind:open={showAdd}>
     <!-- Add Buttton -->
-    <Sheet.Content side="bottom" class="min-h-150 p-4" showCloseButton={false} inert={cloud.saving || cloud.needsReload || cloud.loading}>
+    <Sheet.Content side="bottom" class="min-h-150 max-h-[90vh] overflow-y-auto p-4 pb-24" showCloseButton={false} inert={cloud.saving || cloud.needsReload || cloud.loading}>
         <Sheet.Header class="flex justify-between">
             <Sheet.Title>Create New Exercise</Sheet.Title>
             <Button
@@ -155,9 +157,7 @@
                 />
             </Field>
 
-            <Field label="Image Link">
-                <Input bind:value={newExercise.imageLink} />
-            </Field>
+            <ExerciseImagePicker bind:imageLink={newExercise.imageLink} bind:file={imageFile} />
             <Field label="Note">
                 <Input bind:value={newExercise.note} />
             </Field>
@@ -167,10 +167,11 @@
             text="Add Exercise"
             onOverlay={true}
             onclick={async () => {
-                const result = await exerciseManager.addExercise(newExercise);
+                const result = await exerciseManager.addExercise(newExercise, imageFile);
                 if (result.success) {
                     showAdd = false;
                     newExercise = exerciseManager.createDefaultExercise();
+                    imageFile = null;
                 } else alert(result.message);
             }}
         />
