@@ -11,12 +11,14 @@
     import { getSupabase } from "$lib/supabase";
     import type { LayoutProps } from "./$types";
     import CreateExercisePage from "$lib/components/CreateExercisePage.svelte";
+    import { initializeTheme } from "$lib/theme";
 
     let { children, data }: LayoutProps = $props();
     const authPage = $derived(page.url.pathname === "/sign-in" || page.url.pathname === "/reset-password" || page.url.pathname.startsWith("/auth/"));
     let main = $state<HTMLElement>();
     let wasCreatingExercise = false;
     let previousScroll = 0;
+    onMount(initializeTheme);
 
     $effect(() => {
         const creating = Boolean(page.state.createExercise && page.route.id !== "/exercises/new");

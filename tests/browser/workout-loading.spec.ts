@@ -51,6 +51,109 @@ test("successful empty workout responses replace the homepage loading state", as
     expect(errors).toEqual([]);
 });
 
+test("homepage actions and statistics work across viewport sizes", async ({ page }) => {
+    await mockSignIn(page);
+    for (const width of [320, 1280]) {
+        await page.setViewportSize({ width, height: 900 });
+        const log = page.getByRole("link", { name: "Log Session" });
+        const start = page.getByRole("link", { name: "Start Session" });
+        const logBox = await log.boundingBox();
+        const startBox = await start.boundingBox();
+        expect(Math.abs(logBox!.y - startBox!.y)).toBeLessThan(2);
+        expect(Math.abs(logBox!.width - startBox!.width)).toBeLessThan(2);
+        await expect(start).toHaveClass(/border-border/);
+        const stats = page.getByRole("region", { name: "Workout statistics" });
+        for (const label of ["Total Sessions", "Total Time", "Streak", "Workouts this week"]) {
+            await expect(stats.getByText(label, { exact: true })).toBeVisible();
+        }
+        await expect(stats.locator('[data-slot="card-title"]')).toHaveText(["Streak", "Workouts this week", "Total Sessions", "Total Time"]);
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    }
+    await page.evaluate(async () => {
+        const modulePath = "/src/lib/cloud.svelte.ts";
+        const { cloud } = await import(modulePath);
+        const now = new Date();
+        const date = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+        cloud.data.sessions["test-session"] = { id: "test-session", date, duration: 1800, routineId: "custom", exercises: [] };
+    });
+    const stats = page.getByRole("region", { name: "Workout statistics" });
+    await expect(stats.getByText("Total Sessions").locator("../..")).toContainText("1");
+    await expect(stats.getByText("Total Time").locator("../..")).toContainText("30m");
+    await expect(stats.getByText("Streak", { exact: true }).locator("../..")).toContainText("1 day");
+    await expect(stats.getByText("Workouts this week").locator("../..")).toContainText("1");
+    await page.getByRole("link", { name: "Start Session" }).click();
+    await expect(page).toHaveURL(/\/sessions\/new$/);
+    await page.getByRole("link", { name: "Home", exact: true }).click();
+    await page.getByRole("link", { name: "Log Session" }).click();
+    await expect(page).toHaveURL(/\/log$/);
+});
+
+test("appearance follows the system and supports saved overrides", async ({ page }) => {
+    await page.emulateMedia({ colorScheme: "dark" });
+    await mockSignIn(page);
+    await expect(page.locator("html")).toHaveClass(/dark/);
+    const font = await page.locator("body").evaluate((element) => getComputedStyle(element).fontFamily);
+    expect(font).toContain("Public Sans");
+    await page.evaluate(() => document.fonts.ready);
+    expect(await page.evaluate(() => document.fonts.check('16px "Public Sans Variable"'))).toBe(true);
+    const statContrast = await page.locator('[aria-label="Workout statistics"] [data-slot="card-title"]').evaluateAll((titles) => {
+        function luminance(color: string) {
+            const canvas = document.createElement("canvas");
+            canvas.width = canvas.height = 1;
+            const context = canvas.getContext("2d")!;
+            context.fillStyle = color;
+            context.fillRect(0, 0, 1, 1);
+            const components = Array.from(context.getImageData(0, 0, 1, 1).data).slice(0, 3).map((value) => value / 255);
+            const linear = components.map((value) => value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4);
+            return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2];
+        }
+        return titles.map((title) => {
+            const text = luminance(getComputedStyle(title).color);
+            const background = luminance(getComputedStyle(title.closest('[data-slot="card"]')!).backgroundColor);
+            return (Math.max(text, background) + 0.05) / (Math.min(text, background) + 0.05);
+        });
+    });
+    expect(statContrast).toHaveLength(4);
+    expect(Math.min(...statContrast)).toBeGreaterThanOrEqual(4.5);
+    await page.setViewportSize({ width: 390, height: 850 });
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.locator("header").first().getByRole("button").click();
+    await expect(page.getByRole("heading", { name: "Profile" })).toBeVisible();
+    await expect(page.getByRole("radio", { name: "System" })).toBeChecked();
+    await page.getByText("Light", { exact: true }).click();
+    await expect(page.locator("html")).not.toHaveClass(/dark/);
+    expect(await page.evaluate(() => localStorage.getItem("gym-logger-theme"))).toBe("light");
+    await page.getByText("Dark", { exact: true }).click();
+    await page.emulateMedia({ colorScheme: "light" });
+    await expect(page.locator("html")).toHaveClass(/dark/);
+    await page.getByText("System", { exact: true }).click();
+    await expect(page.locator("html")).not.toHaveClass(/dark/);
+    await page.emulateMedia({ colorScheme: "dark" });
+    await expect(page.locator("html")).toHaveClass(/dark/);
+    await page.getByRole("link", { name: "Exercises", exact: true }).click();
+    await page.getByRole("button", { name: "Add", exact: true }).click();
+    const name = page.getByRole("textbox", { name: "Name", exact: true });
+    await expect(name).toHaveCSS("background-color", "rgb(41, 46, 53)");
+    await page.setViewportSize({ width: 390, height: 850 });
+});
+
+test("appearance changes synchronize across tabs", async ({ page, context }) => {
+    await page.emulateMedia({ colorScheme: "light" });
+    await mockSignIn(page);
+    await page.locator("header").first().getByRole("button").click();
+    await expect(page.getByRole("heading", { name: "Profile" })).toBeVisible();
+    const other = await context.newPage();
+    await other.goto("/sign-in");
+    await other.evaluate(() => localStorage.setItem("gym-logger-theme", "dark"));
+    await expect(page.locator("html")).toHaveClass(/dark/);
+    await expect(page.getByRole("radio", { name: "Dark" })).toBeChecked();
+    await page.getByText("Light", { exact: true }).click();
+    await expect(other.locator("html")).not.toHaveClass(/dark/);
+    await other.evaluate(() => localStorage.removeItem("gym-logger-theme"));
+    await expect(page.getByRole("radio", { name: "System" })).toBeChecked();
+    await other.close();
+});
+
 test("exercise image picker supports library selection and upload validation", async ({ page }) => {
     await mockSignIn(page);
     await page.getByRole('link', { name: 'Exercises', exact: true }).click();

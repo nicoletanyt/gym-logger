@@ -37,22 +37,22 @@ export const METRICS = {
     weight: {
         name: "Weight",
         icon: Dumbbell,
-        colour: "bg-blue-200",
+        colour: "bg-blue-200 dark:bg-[#243c53]",
     },
     reps: {
         name: "Reps",
         icon: Repeat,
-        colour: "bg-yellow-200",
+        colour: "bg-yellow-200 dark:bg-[#51462a]",
     },
     duration: {
         name: "Duration",
         icon: Timer,
-        colour: "bg-pink-200",
+        colour: "bg-pink-200 dark:bg-[#513240]",
     },
     cardio: {
         name: "Cardio",
         icon: SportShoe,
-        colour: "bg-green-200",
+        colour: "bg-green-200 dark:bg-[#23443a]",
     },
 } satisfies Record<MetricType, MetricDetails>;
 

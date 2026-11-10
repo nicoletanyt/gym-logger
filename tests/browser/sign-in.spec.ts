@@ -61,6 +61,21 @@ test("sign-in fits a mobile viewport", async ({ page }) => {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 
+test("saved appearance is applied on reload before sign-in", async ({ page }) => {
+    await page.emulateMedia({ colorScheme: "light" });
+    await page.goto("/sign-in");
+    await page.evaluate(() => localStorage.setItem("gym-logger-theme", "dark"));
+    await page.reload();
+    await expect(page.locator("html")).toHaveClass(/dark/);
+    await expect(page.getByLabel("Email address")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Sign in", exact: true })).toBeEnabled();
+    await page.setViewportSize({ width: 390, height: 850 });
+    await page.emulateMedia({ colorScheme: "dark" });
+    await page.evaluate(() => localStorage.setItem("gym-logger-theme", "light"));
+    await page.reload();
+    await expect(page.locator("html")).not.toHaveClass(/dark/);
+});
+
 test("hosted account can sign in, load workouts, and sign out", async ({ page }) => {
     // Optional read-only smoke test. Supply a dedicated confirmed hosted test
     // account explicitly; never provision users or send mail automatically.

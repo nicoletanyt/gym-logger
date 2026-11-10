@@ -7,13 +7,22 @@
     import { cloud } from "$lib/cloud.svelte";
     import { STORAGE_KEYS } from "$lib/constants";
     import { onMount } from "svelte";
+    import { getThemePreference, setThemePreference, THEME_STORAGE_KEY, type ThemePreference } from "$lib/theme";
+    import { Monitor, Moon, Sun } from "@lucide/svelte";
 
     let signingOut = $state(false);
     let error = $state("");
     let hasLegacyData = $state(false);
+    let appearance = $state<ThemePreference>("system");
     onMount(() => {
+        appearance = getThemePreference();
+        const onStorage = (event: StorageEvent) => {
+            if (event.key === THEME_STORAGE_KEY || event.key === null) appearance = getThemePreference();
+        };
+        window.addEventListener("storage", onStorage);
         try { hasLegacyData = Object.values(STORAGE_KEYS).some((key) => localStorage.getItem(key) !== null); }
         catch { /* Browser storage may be disabled; cloud storage still works. */ }
+        return () => window.removeEventListener("storage", onStorage);
     });
     function download(value: unknown, name: string) {
         const url = URL.createObjectURL(new Blob([JSON.stringify(value, null, 2)], { type: "application/json" }));
@@ -51,6 +60,22 @@
     </div>
     <p class="text-muted-foreground">{page.data.user?.email}</p>
 </header>
+
+<section class="space-y-3">
+    <div class="space-y-1">
+        <h2>Appearance</h2>
+        <p class="text-sm text-muted-foreground">Choose how Gym Logger looks on this device.</p>
+    </div>
+    <fieldset class="grid grid-cols-3 gap-2" aria-label="Appearance">
+        {#each [{ value: "system", label: "System", icon: Monitor }, { value: "light", label: "Light", icon: Sun }, { value: "dark", label: "Dark", icon: Moon }] as option}
+            <label class="flex min-w-0 cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border px-2 py-3 text-sm font-medium transition-colors has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ring {appearance === option.value ? 'border-foreground bg-muted' : 'border-border bg-card hover:bg-muted'}">
+                <input type="radio" class="sr-only" name="appearance" value={option.value} checked={appearance === option.value} onchange={() => { appearance = option.value as ThemePreference; setThemePreference(appearance); }} />
+                <option.icon aria-hidden="true" class="size-5" />
+                {option.label}
+            </label>
+        {/each}
+    </fieldset>
+</section>
 
 <section class="space-y-3">
     <Button
